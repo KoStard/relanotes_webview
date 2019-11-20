@@ -4,22 +4,29 @@
 extern crate serde_derive;
 extern crate serde_json;
 extern crate web_view;
+extern crate relanotes_rs;
 
 use web_view::*;
+use diesel::SqliteConnection;
 
 struct State {
-    count: i32
+    count: i32,
+    connection: SqliteConnection
 }
 
 impl State {
-    pub fn new() -> Self {
+    pub fn new(connection: SqliteConnection) -> Self {
         State {
-            count: 0
+            count: 0,
+            connection: connection
         }
     }
 }
 
 fn main() {
+    let connection = relanotes_rs::establish_connection();
+    relanotes_rs::setup_database(&connection).unwrap();
+
     let html = format!(
         include_str!("front-end/index.html"),
         styles = inline_style(include_str!("front-end/styles.css")),
@@ -32,7 +39,7 @@ fn main() {
         .content(Content::Html(html))
         .size(800, 600)
         .debug(true)
-        .user_data(State::new())
+        .user_data(State::new(connection))
         .invoke_handler(|webview, arg| {
             use Cmd::*;
             
