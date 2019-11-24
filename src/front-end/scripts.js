@@ -13,10 +13,10 @@ var Button = /** @class */ (function () {
 var GUI = /** @class */ (function () {
     function GUI() {
         this.container = document.getElementById('container');
-        var getNamesButton = new Button("Get Names", function () {
-            ipc.getNames();
+        var GetGroupsButton = new Button("Get Names", function () {
+            ipc.GetGroups();
         });
-        this.container.appendChild(getNamesButton.element);
+        this.container.appendChild(GetGroupsButton.element);
         var groupNamesContainer = document.createElement('div');
         this.groupNamesContainer = groupNamesContainer;
         this.container.appendChild(groupNamesContainer);
@@ -47,9 +47,9 @@ var IPC = /** @class */ (function () {
             cmd: "Init"
         });
     };
-    IPC.prototype.getNames = function () {
+    IPC.prototype.GetGroups = function () {
         this.invoke({
-            cmd: "GetNames"
+            cmd: "GetGroups"
         });
     };
     return IPC;

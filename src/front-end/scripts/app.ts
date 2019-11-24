@@ -19,10 +19,10 @@ class GUI {
     groupNamesContainer: HTMLDivElement;
     constructor() {
         this.container = <HTMLDivElement> document.getElementById('container');
-        let getNamesButton = new Button("Get Names", () => {
-            ipc.getNames();
+        let getGroupsButton = new Button("Get Names", () => {
+            ipc.GetGroups();
         });
-        this.container.appendChild(getNamesButton.element);
+        this.container.appendChild(getGroupsButton.element);
 
         let groupNamesContainer = document.createElement('div');
         this.groupNamesContainer = groupNamesContainer;
@@ -55,9 +55,9 @@ class IPC {
             cmd: "Init"
         });
     }
-    getNames() {
+    GetGroups() {
         this.invoke({
-            cmd: "GetNames"
+            cmd: "GetGroups"
         });
     }
 }
