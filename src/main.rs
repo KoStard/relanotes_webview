@@ -9,23 +9,32 @@ extern crate relanotes_rs;
 use web_view::*;
 use diesel::SqliteConnection;
 
-struct State {
+use relanotes_rs::groups_representation::Groups;
+
+struct State<'a> {
     count: i32,
-    connection: SqliteConnection
+    connection: &'a SqliteConnection,
+    groups_representation: Groups<'a>,
 }
 
-impl State {
-    pub fn new(connection: SqliteConnection) -> Self {
+impl<'a> State<'a> {
+    pub fn new(connection: &'a SqliteConnection) -> Self {
+        let mut groups_representation = Groups::new(connection);
         State {
             count: 0,
-            connection: connection
+            connection,
+            groups_representation,
         }
+    }
+    pub fn groups(&mut self) -> Result<Vec<&str>, diesel::result::Error> {
+        self.groups_representation.load_groups()?;
+        Ok(self.groups_representation.get_names())
     }
 }
 
 fn main() {
     let connection = relanotes_rs::establish_connection();
-    relanotes_rs::setup_database(&connection).unwrap();
+    relanotes_rs::database_setup::setup_database(&connection).unwrap();
 
     let html = format!(
         include_str!("front-end/index.html"),
@@ -39,27 +48,25 @@ fn main() {
         .content(Content::Html(html))
         .size(800, 600)
         .debug(true)
-        .user_data(State::new(connection))
+        .user_data(State::new(&connection))
         .invoke_handler(|webview, arg| {
             use Cmd::*;
-            
+
             let state = webview.user_data_mut();
+            let mut msg = None;
 
             if let Ok(cmd) = serde_json::from_str(arg) {
                 match cmd {
-                    Init => {
-                    },
-                    Increment => {
-                        state.count += 1;
-                    },
-                    Decrement => {
-                        state.count -= 1;
-                    },
+                    Init => {}
+                    GetNames => {
+                        let elements = state.groups().unwrap();
+                        msg = Some(serde_json::to_string(&elements).unwrap());
+                    }
                 }
             }
 
             // webview.set_title(&format!("Rust Todo App ({} Tasks)", tasks_len))?;
-            render(webview)
+            render(webview, msg)
         })
         .build()
         .unwrap();
@@ -69,11 +76,18 @@ fn main() {
     webview.run().unwrap();
 }
 
-fn render(webview: &mut WebView<State>) -> WVResult {
+fn render(webview: &mut WebView<State>, msg: Option<String>) -> WVResult {
     let render_state = {
-        let state = webview.user_data();
+//        let state = webview.user_data();
         // println!("{:#?}", state);
-        format!("ipc.render({})", state.count)
+        match msg {
+            Some (e) => {
+                format!("ipc.render({})", e)
+            }
+            None => {
+                String::new()
+            }
+        }
     };
     webview.eval(&render_state)
 }
@@ -82,8 +96,7 @@ fn render(webview: &mut WebView<State>) -> WVResult {
 #[serde(tag = "cmd")]
 pub enum Cmd {
     Init,
-    Increment,
-    Decrement
+    GetNames,
 }
 
 fn inline_style(s: &str) -> String {

@@ -16,28 +16,26 @@ class Button {
 class GUI {
     container: HTMLDivElement;
     countSpan: HTMLSpanElement;
+    groupNamesContainer: HTMLDivElement;
     constructor() {
         this.container = <HTMLDivElement> document.getElementById('container');
-        let incrementButton = new Button(
-            "Increment",
-            () => {
-                ipc.increment()
-            }
-        );
-        let decrementButton = new Button(
-            "Decrement",
-            () => {
-                ipc.decrement()
-            }
-        );
-        this.countSpan = document.createElement('span');
-        this.container.appendChild(incrementButton.element);
-        this.container.appendChild(decrementButton.element);
-        this.container.appendChild(this.countSpan);
+        let getNamesButton = new Button("Get Names", () => {
+            ipc.getNames();
+        });
+        this.container.appendChild(getNamesButton.element);
+
+        let groupNamesContainer = document.createElement('div');
+        this.groupNamesContainer = groupNamesContainer;
+        this.container.appendChild(groupNamesContainer);
     }
 
-    updateCount(count: Number) {
-        this.countSpan.innerText = count.toString();
+    renderGroupNames(names: Array<string>) {
+        this.groupNamesContainer.innerHTML = "";
+        for (let name of names) {
+            let nameElement = document.createElement('span');
+            nameElement.innerText = name;
+            this.groupNamesContainer.appendChild(nameElement);
+        }
     }
 }
 
@@ -46,26 +44,20 @@ class IPC {
     constructor(gui: GUI) { 
         this.gui = gui;
     }
-    render(count) {
-        console.log(count);
-        this.gui.updateCount(count);
+    render(names) {
+        this.gui.renderGroupNames(names);
     }
     private invoke(arg) {
         (window.external as any).invoke(JSON.stringify(arg));
     }
-    init() { 
+    init() {
         this.invoke({
             cmd: "Init"
         });
     }
-    increment() {
+    getNames() {
         this.invoke({
-            cmd: "Increment"
-        });
-    }
-    decrement() {
-        this.invoke({
-            cmd: "Decrement"
+            cmd: "GetNames"
         });
     }
 }

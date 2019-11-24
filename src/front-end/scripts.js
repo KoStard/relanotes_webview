@@ -13,19 +13,22 @@ var Button = /** @class */ (function () {
 var GUI = /** @class */ (function () {
     function GUI() {
         this.container = document.getElementById('container');
-        var incrementButton = new Button("Increment", function () {
-            ipc.increment();
+        var getNamesButton = new Button("Get Names", function () {
+            ipc.getNames();
         });
-        var decrementButton = new Button("Decrement", function () {
-            ipc.decrement();
-        });
-        this.countSpan = document.createElement('span');
-        this.container.appendChild(incrementButton.element);
-        this.container.appendChild(decrementButton.element);
-        this.container.appendChild(this.countSpan);
+        this.container.appendChild(getNamesButton.element);
+        var groupNamesContainer = document.createElement('div');
+        this.groupNamesContainer = groupNamesContainer;
+        this.container.appendChild(groupNamesContainer);
     }
-    GUI.prototype.updateCount = function (count) {
-        this.countSpan.innerText = count.toString();
+    GUI.prototype.renderGroupNames = function (names) {
+        this.groupNamesContainer.innerHTML = "";
+        for (var _i = 0, names_1 = names; _i < names_1.length; _i++) {
+            var name_1 = names_1[_i];
+            var nameElement = document.createElement('span');
+            nameElement.innerText = name_1;
+            this.groupNamesContainer.appendChild(nameElement);
+        }
     };
     return GUI;
 }());
@@ -33,9 +36,8 @@ var IPC = /** @class */ (function () {
     function IPC(gui) {
         this.gui = gui;
     }
-    IPC.prototype.render = function (count) {
-        console.log(count);
-        this.gui.updateCount(count);
+    IPC.prototype.render = function (names) {
+        this.gui.renderGroupNames(names);
     };
     IPC.prototype.invoke = function (arg) {
         window.external.invoke(JSON.stringify(arg));
@@ -45,14 +47,9 @@ var IPC = /** @class */ (function () {
             cmd: "Init"
         });
     };
-    IPC.prototype.increment = function () {
+    IPC.prototype.getNames = function () {
         this.invoke({
-            cmd: "Increment"
-        });
-    };
-    IPC.prototype.decrement = function () {
-        this.invoke({
-            cmd: "Decrement"
+            cmd: "GetNames"
         });
     };
     return IPC;
