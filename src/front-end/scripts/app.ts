@@ -4,6 +4,8 @@
 // Or compile and run with this command
 // tsc --outFile src/front-end/scripts.js --module amd src/front-end/scripts/app.ts && cargo run
 
+import { get_waiter } from "./tools";
+
 class Button { 
     element: HTMLButtonElement;
     constructor(text, onclick) {
@@ -20,7 +22,7 @@ class GUI {
     constructor() {
         this.container = <HTMLDivElement> document.getElementById('container');
         let getGroupsButton = new Button("Get Names", () => {
-            ipc.GetGroups();
+            ipc.GetGroups().then(console.log);
         });
         this.container.appendChild(getGroupsButton.element);
 
@@ -39,24 +41,43 @@ class GUI {
     }
 }
 
+class RequestsRegistry {
+    requests: object;
+    constructor() { 
+        this.requests = {};
+    }
+    async wait_for(id: Number) {
+        await this.requests[id.toString()].p;
+    }
+    private get_id_for_request() {
+        return (new Date()).getTime();
+    }
+    async send_request(request: object) {
+        let id = this.get_id_for_request();
+        let [f, p] = get_waiter();
+        this.requests[id.toString()] = { f, p };
+        (window.external as any).invoke(JSON.stringify(request));
+        return await this.wait_for(id);
+    }
+    put_response(id: Number, msg) {
+        this.requests[id.toString()].f(msg);
+    }
+}
+
 class IPC {
     gui: GUI;
+    req_reg: RequestsRegistry;
     constructor(gui: GUI) { 
         this.gui = gui;
-    }
-    render(names) {
-        this.gui.renderGroupNames(names);
-    }
-    private invoke(arg) {
-        (window.external as any).invoke(JSON.stringify(arg));
+        this.req_reg = new RequestsRegistry();
     }
     init() {
-        this.invoke({
+        return this.req_reg.send_request({
             cmd: "Init"
         });
     }
     GetGroups() {
-        this.invoke({
+        return this.req_reg.send_request({
             cmd: "GetGroups"
         });
     }

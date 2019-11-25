@@ -41,14 +41,17 @@ fn main() {
         .user_data(State::new(&connection))
         .invoke_handler(|webview, arg| {
             let state = webview.user_data_mut();
+            let mut req_id: i32 = 0;
             let mut msg = None;
 
             if let Ok(cmd) = serde_json::from_str::<Cmd>(arg) {
                 match cmd {
-                    Cmd::Init => {
+                    Cmd::Init { request_id } => {
+                        req_id = request_id;
                         state.groups.load().expect("Got error while loading groups");
                     }
-                    Cmd::GetGroups => {
+                    Cmd::GetGroups { request_id } => {
+                        req_id = request_id;
                         let elements = state
                             .groups
                             .groups_map
@@ -57,8 +60,12 @@ fn main() {
                             .collect::<Vec<&str>>();
                         msg = Some(serde_json::to_string(&elements).unwrap());
                     }
-                    Cmd::CreateGroup {group_name} => {
-                        let group_abstraction  = state.groups.create(group_name).unwrap();
+                    Cmd::CreateGroup {
+                        request_id,
+                        group_name,
+                    } => {
+                        req_id = request_id;
+                        let group_abstraction = state.groups.create(group_name).unwrap();
                     }
                     // Cmd::DeleteGroup => {}
                     // Cmd::GetSubGroups => {}
@@ -78,7 +85,7 @@ fn main() {
             }
 
             // webview.set_title(&format!("Rust Todo App ({} Tasks)", tasks_len))?;
-            render(webview, msg)
+            send_response(webview, req_id, msg)
         })
         .build()
         .unwrap();
@@ -88,30 +95,46 @@ fn main() {
     webview.run().unwrap();
 }
 
-fn render(webview: &mut WebView<State>, msg: Option<String>) -> WVResult {
-    let render_state = {
-        match msg {
-            Some(e) => format!("ipc.render({})", e),
-            None => String::new(),
+fn send_response(webview: &mut WebView<State>, req_id: i32, msg: Option<String>) -> WVResult {
+    let command = {
+        if req_id != 0 {
+            format!(
+                "ipc.req_reg.put_response({}, {})",
+                req_id,
+                if let Some(e) = msg {
+                    e
+                } else {
+                    String::from("")
+                }
+            )
+        } else {
+            String::new()
         }
     };
-    webview.eval(&render_state)
+    webview.eval(&command)
 }
 
 #[derive(Deserialize)]
 #[serde(tag = "cmd")]
 pub enum Cmd {
-    Init,
-    GetGroups,
+    Init {
+        request_id: i32,
+    },
+    GetGroups {
+        request_id: i32,
+    },
     CreateGroup {
+        request_id: i32,
         group_name: String,
     },
     DeleteGroup {
+        request_id: i32,
         group_id: i32,
     },
     UpdateGroup {
+        request_id: i32,
         group_id: i32,
-        name: String
+        name: String,
     },
     // GetSubGroups {
     //     group_id: i32,
