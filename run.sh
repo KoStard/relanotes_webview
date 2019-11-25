@@ -1,1 +1,1 @@
-tsc --outFile src/front-end/scripts.js --module amd src/front-end/scripts/app.ts && cargo run
+tsc && cargo run

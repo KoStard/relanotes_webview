@@ -41,7 +41,7 @@ fn main() {
         .user_data(State::new(&connection))
         .invoke_handler(|webview, arg| {
             let state = webview.user_data_mut();
-            let mut req_id: i32 = 0;
+            let mut req_id: i64 = 0;
             let mut msg = None;
 
             if let Ok(cmd) = serde_json::from_str::<Cmd>(arg) {
@@ -95,11 +95,11 @@ fn main() {
     webview.run().unwrap();
 }
 
-fn send_response(webview: &mut WebView<State>, req_id: i32, msg: Option<String>) -> WVResult {
+fn send_response(webview: &mut WebView<State>, req_id: i64, msg: Option<String>) -> WVResult {
     let command = {
         if req_id != 0 {
             format!(
-                "ipc.req_reg.put_response({}, {})",
+                "window.ipc.rr.put_response({}, {})",
                 req_id,
                 if let Some(e) = msg {
                     e
@@ -118,21 +118,21 @@ fn send_response(webview: &mut WebView<State>, req_id: i32, msg: Option<String>)
 #[serde(tag = "cmd")]
 pub enum Cmd {
     Init {
-        request_id: i32,
+        request_id: i64,
     },
     GetGroups {
-        request_id: i32,
+        request_id: i64,
     },
     CreateGroup {
-        request_id: i32,
+        request_id: i64,
         group_name: String,
     },
     DeleteGroup {
-        request_id: i32,
+        request_id: i64,
         group_id: i32,
     },
     UpdateGroup {
-        request_id: i32,
+        request_id: i64,
         group_id: i32,
         name: String,
     },

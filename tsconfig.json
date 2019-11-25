@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "outFile": "src/front-end/scripts.js",
+        "module": "amd",
+        "lib": [
+            "dom",
+            "es5",
+            "es6"
+        ],
+        "downlevelIteration": true,
+        "allowSyntheticDefaultImports": true, 
+        "esModuleInterop": true
+    },
+    "files": [
+        "src/front-end/scripts/app.ts",
+    ]
+}
