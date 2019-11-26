@@ -181,7 +181,7 @@ define("tools/requests_registry", ["require", "exports", "tools/tools"], functio
             });
         };
         RequestsRegistry.prototype.put_response = function (id, msg) {
-            console.log("Got response", id, msg);
+            // console.log("Got response", id, msg);
             this.requests[id.toString()].f(msg);
             delete this.requests[id.toString()];
         };
@@ -196,14 +196,14 @@ define("flow/base/history_node", ["require", "exports"], function (require, expo
         function HistoryNode() {
         }
         HistoryNode.prototype.go_back = function () {
-            this.prev.current_next = null;
+            this.__prev.__current_next = null;
             this.stop();
-            this.prev.initiate();
+            this.__prev.initiate();
         };
-        HistoryNode.prototype.open_new = function (next) {
-            if (this.current_next)
-                this.current_next.stop();
-            this.current_next = next;
+        HistoryNode.prototype.open_next = function (next) {
+            if (this.__current_next)
+                this.__current_next.stop();
+            this.__current_next = next;
             next.initiate();
         };
         return HistoryNode;
@@ -219,20 +219,31 @@ define("flow/groups_view", ["require", "exports", "flow/base/history_node", "too
             return _super.call(this) || this;
         }
         GroupsView.prototype.initiate = function () {
-            var _this = this;
             var container = document.getElementById("container");
-            (function () { return __awaiter(_this, void 0, void 0, function () {
-                var html;
+            this.render(container);
+        };
+        GroupsView.prototype.render = function (container) {
+            return __awaiter(this, void 0, void 0, function () {
+                var fragment;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
-                        case 0: return [4 /*yield*/, this.loadGroups()];
+                        case 0:
+                            fragment = document.createDocumentFragment();
+                            return [4 /*yield*/, this.loadGroups()];
                         case 1:
-                            html = (_a.sent()).map(function (group) { return "<p>" + group + "</p>"; }).join("");
-                            container.innerHTML = html;
+                            (_a.sent()).forEach(function (group) {
+                                var b = document.createElement('button');
+                                b.innerText = group;
+                                b.onclick = function (e) {
+                                    console.log("Clicked", e);
+                                };
+                                fragment.appendChild(b);
+                            });
+                            container.appendChild(fragment);
                             return [2 /*return*/];
                     }
                 });
-            }); })();
+            });
         };
         GroupsView.prototype.loadGroups = function () {
             return __awaiter(this, void 0, void 0, function () {

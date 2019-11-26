@@ -7,10 +7,18 @@ export class GroupsView extends HistoryNode {
     }
     initiate() {
         let container = <HTMLDivElement>document.getElementById("container");
-        (async () => {
-            let html = (await this.loadGroups()).map(group => `<p>${group}</p>`).join("");
-            container.innerHTML = html;
-        })();
+        this.render(container);
+    }
+    async render(container: HTMLDivElement) {
+        let fragment = document.createDocumentFragment();
+        (await this.loadGroups()).forEach(group => {
+            let b = document.createElement('button');
+            b.innerText = group;
+            b.onclick = () => {
+            };
+            fragment.appendChild(b);
+        });
+        container.appendChild(fragment);
     }
     async loadGroups() {
         return await (window as any).ipc.rr.send_command(new GetGroups());

@@ -1,16 +1,16 @@
 export abstract class HistoryNode {
-    prev: HistoryNode;
-    current_next: HistoryNode;
+    __prev: HistoryNode;
+    __current_next: HistoryNode;
     abstract initiate();
     abstract stop();
     go_back() {
-        this.prev.current_next = null;
+        this.__prev.__current_next = null;
         this.stop();
-        this.prev.initiate();
+        this.__prev.initiate();
     }
-    open_new(next: HistoryNode) {
-        if (this.current_next) this.current_next.stop();
-        this.current_next = next;
+    open_next(next: HistoryNode) {
+        if (this.__current_next) this.__current_next.stop();
+        this.__current_next = next;
         next.initiate();
     }
 }

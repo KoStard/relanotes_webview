@@ -23,7 +23,7 @@ export class RequestsRegistry {
         return await this.send_request(command.serialize());
     }
     put_response(id: Number, msg) {
-        console.log("Got response", id, msg);
+        // console.log("Got response", id, msg);
         this.requests[id.toString()].f(msg);
         delete this.requests[id.toString()];
     }
