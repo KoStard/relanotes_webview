@@ -196,16 +196,21 @@ define("flow/base/history_node", ["require", "exports"], function (require, expo
         function HistoryNode() {
         }
         HistoryNode.prototype.go_back = function () {
+            this.prev.current_next = null;
+            this.stop();
             this.prev.initiate();
         };
         HistoryNode.prototype.open_new = function (next) {
+            if (this.current_next)
+                this.current_next.stop();
+            this.current_next = next;
             next.initiate();
         };
         return HistoryNode;
     }());
     exports.HistoryNode = HistoryNode;
 });
-define("flow/groups_view", ["require", "exports", "flow/base/history_node"], function (require, exports, history_node_1) {
+define("flow/groups_view", ["require", "exports", "flow/base/history_node", "tools/commands"], function (require, exports, history_node_1, commands_1) {
     "use strict";
     exports.__esModule = true;
     var GroupsView = /** @class */ (function (_super) {
@@ -214,21 +219,59 @@ define("flow/groups_view", ["require", "exports", "flow/base/history_node"], fun
             return _super.call(this) || this;
         }
         GroupsView.prototype.initiate = function () {
-            var container = document.getElementById('container');
-            // container.innerHTML = 
+            var _this = this;
+            var container = document.getElementById("container");
+            (function () { return __awaiter(_this, void 0, void 0, function () {
+                var html;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, this.loadGroups()];
+                        case 1:
+                            html = (_a.sent()).map(function (group) { return "<p>" + group + "</p>"; }).join("");
+                            container.innerHTML = html;
+                            return [2 /*return*/];
+                    }
+                });
+            }); })();
+        };
+        GroupsView.prototype.loadGroups = function () {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, window.ipc.rr.send_command(new commands_1.GetGroups())];
+                        case 1: return [2 /*return*/, _a.sent()];
+                    }
+                });
+            });
+        };
+        GroupsView.prototype.stop = function () {
         };
         return GroupsView;
     }(history_node_1.HistoryNode));
     exports.GroupsView = GroupsView;
 });
+define("flow/base/flow_handler", ["require", "exports"], function (require, exports) {
+    "use strict";
+    exports.__esModule = true;
+    var FlowHandler = /** @class */ (function () {
+        function FlowHandler(initialHistoryNode) {
+            this.history = [initialHistoryNode];
+        }
+        FlowHandler.prototype.initiate = function () {
+            return this.history[0].initiate();
+        };
+        return FlowHandler;
+    }());
+    exports.FlowHandler = FlowHandler;
+});
 // Compile with this command
 // tsc --outFile src/front-end/scripts.js --module amd src/front-end/scripts/app.ts
-define("app", ["require", "exports", "tools/requests_registry", "tools/commands"], function (require, exports, requests_registry_1, commands_1) {
+define("app", ["require", "exports", "tools/requests_registry", "tools/commands", "flow/groups_view"], function (require, exports, requests_registry_1, commands_2, groups_view_1) {
     "use strict";
     exports.__esModule = true;
     var Button = /** @class */ (function () {
         function Button(text, onclick) {
-            this.element = document.createElement('button');
+            this.element = document.createElement("button");
             this.element.innerText = text;
             this.element.onclick = onclick;
         }
@@ -237,14 +280,14 @@ define("app", ["require", "exports", "tools/requests_registry", "tools/commands"
     var GUI = /** @class */ (function () {
         function GUI() {
             var _this = this;
-            this.container = document.getElementById('container');
+            this.container = document.getElementById("container");
             var getGroupsButton = new Button("Get Names", function () {
-                window.ipc.rr.send_command(new commands_1.GetGroups()).then(function (names) {
+                window.ipc.rr.send_command(new commands_2.GetGroups()).then(function (names) {
                     _this.renderGroupNames(names);
                 });
             });
             this.container.appendChild(getGroupsButton.element);
-            var groupNamesContainer = document.createElement('div');
+            var groupNamesContainer = document.createElement("div");
             this.groupNamesContainer = groupNamesContainer;
             this.container.appendChild(groupNamesContainer);
         }
@@ -254,7 +297,7 @@ define("app", ["require", "exports", "tools/requests_registry", "tools/commands"
             try {
                 for (var names_1 = __values(names), names_1_1 = names_1.next(); !names_1_1.done; names_1_1 = names_1.next()) {
                     var name_1 = names_1_1.value;
-                    var nameElement = document.createElement('span');
+                    var nameElement = document.createElement("span");
                     nameElement.innerText = name_1;
                     this.groupNamesContainer.appendChild(nameElement);
                 }
@@ -280,6 +323,8 @@ define("app", ["require", "exports", "tools/requests_registry", "tools/commands"
         // Initializing the app
         var ipc = new IPC();
         window.ipc = ipc; // Saving reference in window
-        ipc.rr.send_command(new commands_1.Init()).then(function () { return console.log("Got initial response"); });
+        ipc.rr.send_command(new commands_2.Init()).then(function () { return console.log("Got initial response"); });
+        var groups_view = new groups_view_1.GroupsView();
+        groups_view.initiate();
     }
 });
