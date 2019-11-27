@@ -24,3 +24,10 @@ export class GetGroups extends Command {
         super("GetGroups", {});
     }
 }
+
+
+export class GetSubGroups extends Command {
+    constructor(group_id: Number) {
+        super("GetSubGroups", { group_id });
+    }
+}

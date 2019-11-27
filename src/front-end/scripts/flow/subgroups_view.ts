@@ -1,12 +1,14 @@
 import { HistoryNode, HistoryNodeState } from "./base/history_node";
-import { GetGroups } from "../tools/commands";
-import { SubGroupsView } from "./subgroups_view";
+import { GetSubGroups } from "../tools/commands";
 
-export class GroupsView extends HistoryNode {
-    constructor() {
+export class SubGroupsView extends HistoryNode {
+    group_id: Number;
+    constructor(group_id: Number) {
         super();
+        this.group_id = group_id;
     }
     initiate() {
+        debugger;
         let container = <HTMLDivElement>document.getElementById("container");
         this.render(container);
     }
@@ -14,14 +16,13 @@ export class GroupsView extends HistoryNode {
         let fragment = document.createDocumentFragment();
         // let buttonsContainer = document.createElement('div');
         // buttonsContainer.id = 
-        (await this.loadGroups()).forEach(group => {
+        (await this.loadSubGroups()).forEach(group => {
             let b = document.createElement('button');
             b.innerText = group.name;
             b.onclick = () => {
-                console.log(this.state);
                 if (this.state == HistoryNodeState.ACTIVE) {
                     // you have group id here
-                    this.openGroup(group.id);
+                    this.openSubGroup(group.id);
                 }
             };
             fragment.appendChild(b);
@@ -29,11 +30,12 @@ export class GroupsView extends HistoryNode {
         container.innerHTML = "";
         container.appendChild(fragment);
     }
-    async loadGroups() {
-        return await (window as any).ipc.rr.send_command(new GetGroups());
+    async loadSubGroups() {
+        console.log("Loading", this.group_id);
+        return await (window as any).ipc.rr.send_command(new GetSubGroups(this.group_id));
     }
-    openGroup(group_id: Number) {
-        this.openNext(new SubGroupsView(group_id));
+    openSubGroup(group_id: Number) {
+
     }
     stop() {
 

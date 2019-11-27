@@ -78,17 +78,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __values = (this && this.__values) || function(o) {
-    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
-    if (m) return m.call(o);
-    if (o && typeof o.length === "number") return {
-        next: function () {
-            if (o && i >= o.length) o = void 0;
-            return { value: o && o[i++], done: !o };
-        }
-    };
-    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
-};
 define("tools/tools", ["require", "exports"], function (require, exports) {
     "use strict";
     exports.__esModule = true;
@@ -133,6 +122,14 @@ define("tools/commands", ["require", "exports"], function (require, exports) {
         return GetGroups;
     }(Command));
     exports.GetGroups = GetGroups;
+    var GetSubGroups = /** @class */ (function (_super) {
+        __extends(GetSubGroups, _super);
+        function GetSubGroups(group_id) {
+            return _super.call(this, "GetSubGroups", { group_id: group_id }) || this;
+        }
+        return GetSubGroups;
+    }(Command));
+    exports.GetSubGroups = GetSubGroups;
 });
 define("tools/requests_registry", ["require", "exports", "tools/tools"], function (require, exports, tools_1) {
     "use strict";
@@ -192,25 +189,103 @@ define("tools/requests_registry", ["require", "exports", "tools/tools"], functio
 define("flow/base/history_node", ["require", "exports"], function (require, exports) {
     "use strict";
     exports.__esModule = true;
+    var HistoryNodeState;
+    (function (HistoryNodeState) {
+        HistoryNodeState[HistoryNodeState["ACTIVE"] = 0] = "ACTIVE";
+        HistoryNodeState[HistoryNodeState["STOPPED"] = 1] = "STOPPED";
+    })(HistoryNodeState = exports.HistoryNodeState || (exports.HistoryNodeState = {}));
     var HistoryNode = /** @class */ (function () {
         function HistoryNode() {
         }
-        HistoryNode.prototype.go_back = function () {
+        HistoryNode.prototype.goBack = function () {
             this.__prev.__current_next = null;
-            this.stop();
-            this.__prev.initiate();
+            this.__stop();
+            this.__prev.__initialize();
         };
-        HistoryNode.prototype.open_next = function (next) {
+        HistoryNode.prototype.openNext = function (next) {
             if (this.__current_next)
-                this.__current_next.stop();
+                this.__current_next.__stop();
             this.__current_next = next;
-            next.initiate();
+            next.__initialize();
+        };
+        HistoryNode.prototype.__stop = function () {
+            this.state = HistoryNodeState.STOPPED;
+            this.stop();
+        };
+        HistoryNode.prototype.__initialize = function () {
+            this.state = HistoryNodeState.ACTIVE;
+            this.initiate();
         };
         return HistoryNode;
     }());
     exports.HistoryNode = HistoryNode;
 });
-define("flow/groups_view", ["require", "exports", "flow/base/history_node", "tools/commands"], function (require, exports, history_node_1, commands_1) {
+define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "tools/commands"], function (require, exports, history_node_1, commands_1) {
+    "use strict";
+    exports.__esModule = true;
+    var SubGroupsView = /** @class */ (function (_super) {
+        __extends(SubGroupsView, _super);
+        function SubGroupsView(group_id) {
+            var _this = _super.call(this) || this;
+            _this.group_id = group_id;
+            return _this;
+        }
+        SubGroupsView.prototype.initiate = function () {
+            debugger;
+            var container = document.getElementById("container");
+            this.render(container);
+        };
+        SubGroupsView.prototype.render = function (container) {
+            return __awaiter(this, void 0, void 0, function () {
+                var fragment;
+                var _this = this;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            fragment = document.createDocumentFragment();
+                            return [4 /*yield*/, this.loadSubGroups()];
+                        case 1:
+                            // let buttonsContainer = document.createElement('div');
+                            // buttonsContainer.id = 
+                            (_a.sent()).forEach(function (group) {
+                                var b = document.createElement('button');
+                                b.innerText = group.name;
+                                b.onclick = function () {
+                                    if (_this.state == history_node_1.HistoryNodeState.ACTIVE) {
+                                        // you have group id here
+                                        _this.openSubGroup(group.id);
+                                    }
+                                };
+                                fragment.appendChild(b);
+                            });
+                            container.innerHTML = "";
+                            container.appendChild(fragment);
+                            return [2 /*return*/];
+                    }
+                });
+            });
+        };
+        SubGroupsView.prototype.loadSubGroups = function () {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            console.log("Loading", this.group_id);
+                            return [4 /*yield*/, window.ipc.rr.send_command(new commands_1.GetSubGroups(this.group_id))];
+                        case 1: return [2 /*return*/, _a.sent()];
+                    }
+                });
+            });
+        };
+        SubGroupsView.prototype.openSubGroup = function (group_id) {
+        };
+        SubGroupsView.prototype.stop = function () {
+        };
+        return SubGroupsView;
+    }(history_node_1.HistoryNode));
+    exports.SubGroupsView = SubGroupsView;
+});
+define("flow/groups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "flow/subgroups_view"], function (require, exports, history_node_2, commands_2, subgroups_view_1) {
     "use strict";
     exports.__esModule = true;
     var GroupsView = /** @class */ (function (_super) {
@@ -225,19 +300,28 @@ define("flow/groups_view", ["require", "exports", "flow/base/history_node", "too
         GroupsView.prototype.render = function (container) {
             return __awaiter(this, void 0, void 0, function () {
                 var fragment;
+                var _this = this;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
                             fragment = document.createDocumentFragment();
                             return [4 /*yield*/, this.loadGroups()];
                         case 1:
+                            // let buttonsContainer = document.createElement('div');
+                            // buttonsContainer.id = 
                             (_a.sent()).forEach(function (group) {
                                 var b = document.createElement('button');
-                                b.innerText = group;
+                                b.innerText = group.name;
                                 b.onclick = function () {
+                                    console.log(_this.state);
+                                    if (_this.state == history_node_2.HistoryNodeState.ACTIVE) {
+                                        // you have group id here
+                                        _this.openGroup(group.id);
+                                    }
                                 };
                                 fragment.appendChild(b);
                             });
+                            container.innerHTML = "";
                             container.appendChild(fragment);
                             return [2 /*return*/];
                     }
@@ -248,80 +332,26 @@ define("flow/groups_view", ["require", "exports", "flow/base/history_node", "too
             return __awaiter(this, void 0, void 0, function () {
                 return __generator(this, function (_a) {
                     switch (_a.label) {
-                        case 0: return [4 /*yield*/, window.ipc.rr.send_command(new commands_1.GetGroups())];
+                        case 0: return [4 /*yield*/, window.ipc.rr.send_command(new commands_2.GetGroups())];
                         case 1: return [2 /*return*/, _a.sent()];
                     }
                 });
             });
         };
+        GroupsView.prototype.openGroup = function (group_id) {
+            this.openNext(new subgroups_view_1.SubGroupsView(group_id));
+        };
         GroupsView.prototype.stop = function () {
         };
         return GroupsView;
-    }(history_node_1.HistoryNode));
+    }(history_node_2.HistoryNode));
     exports.GroupsView = GroupsView;
-});
-define("flow/base/flow_handler", ["require", "exports"], function (require, exports) {
-    "use strict";
-    exports.__esModule = true;
-    var FlowHandler = /** @class */ (function () {
-        function FlowHandler(initialHistoryNode) {
-            this.history = [initialHistoryNode];
-        }
-        FlowHandler.prototype.initiate = function () {
-            return this.history[0].initiate();
-        };
-        return FlowHandler;
-    }());
-    exports.FlowHandler = FlowHandler;
 });
 // Compile with this command
 // tsc --outFile src/front-end/scripts.js --module amd src/front-end/scripts/app.ts
-define("app", ["require", "exports", "tools/requests_registry", "tools/commands", "flow/groups_view"], function (require, exports, requests_registry_1, commands_2, groups_view_1) {
+define("app", ["require", "exports", "tools/requests_registry", "tools/commands", "flow/groups_view"], function (require, exports, requests_registry_1, commands_3, groups_view_1) {
     "use strict";
     exports.__esModule = true;
-    var Button = /** @class */ (function () {
-        function Button(text, onclick) {
-            this.element = document.createElement("button");
-            this.element.innerText = text;
-            this.element.onclick = onclick;
-        }
-        return Button;
-    }());
-    var GUI = /** @class */ (function () {
-        function GUI() {
-            var _this = this;
-            this.container = document.getElementById("container");
-            var getGroupsButton = new Button("Get Names", function () {
-                window.ipc.rr.send_command(new commands_2.GetGroups()).then(function (names) {
-                    _this.renderGroupNames(names);
-                });
-            });
-            this.container.appendChild(getGroupsButton.element);
-            var groupNamesContainer = document.createElement("div");
-            this.groupNamesContainer = groupNamesContainer;
-            this.container.appendChild(groupNamesContainer);
-        }
-        GUI.prototype.renderGroupNames = function (names) {
-            var e_1, _a;
-            this.groupNamesContainer.innerHTML = "";
-            try {
-                for (var names_1 = __values(names), names_1_1 = names_1.next(); !names_1_1.done; names_1_1 = names_1.next()) {
-                    var name_1 = names_1_1.value;
-                    var nameElement = document.createElement("span");
-                    nameElement.innerText = name_1;
-                    this.groupNamesContainer.appendChild(nameElement);
-                }
-            }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-            finally {
-                try {
-                    if (names_1_1 && !names_1_1.done && (_a = names_1["return"])) _a.call(names_1);
-                }
-                finally { if (e_1) throw e_1.error; }
-            }
-        };
-        return GUI;
-    }());
     var IPC = /** @class */ (function () {
         function IPC() {
             // Maybe add central database here - if we need to store it in the front-end
@@ -333,8 +363,8 @@ define("app", ["require", "exports", "tools/requests_registry", "tools/commands"
         // Initializing the app
         var ipc = new IPC();
         window.ipc = ipc; // Saving reference in window
-        ipc.rr.send_command(new commands_2.Init()).then(function () { return console.log("Got initial response"); });
+        ipc.rr.send_command(new commands_3.Init()).then(function () { return console.log("Got initial response"); });
         var groups_view = new groups_view_1.GroupsView();
-        groups_view.initiate();
+        groups_view.__initialize();
     }
 });

@@ -1,16 +1,30 @@
+export enum HistoryNodeState {
+    ACTIVE,
+    STOPPED
+}
+
 export abstract class HistoryNode {
     __prev: HistoryNode;
     __current_next: HistoryNode;
+    state: HistoryNodeState;
     abstract initiate();
     abstract stop();
-    go_back() {
+    goBack() {
         this.__prev.__current_next = null;
-        this.stop();
-        this.__prev.initiate();
+        this.__stop();
+        this.__prev.__initialize();
     }
-    open_next(next: HistoryNode) {
-        if (this.__current_next) this.__current_next.stop();
+    openNext(next: HistoryNode) {
+        if (this.__current_next) this.__current_next.__stop();
         this.__current_next = next;
-        next.initiate();
+        next.__initialize();
+    }
+    __stop() {
+        this.state = HistoryNodeState.STOPPED;
+        this.stop();
+    }
+    __initialize() {
+        this.state = HistoryNodeState.ACTIVE;
+        this.initiate();
     }
 }

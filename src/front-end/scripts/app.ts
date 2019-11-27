@@ -7,45 +7,6 @@
 import { RequestsRegistry } from "./tools/requests_registry";
 import { Init, GetGroups } from "./tools/commands";
 import { GroupsView } from "./flow/groups_view";
-import { FlowHandler } from "./flow/base/flow_handler";
-
-class Button {
-    element: HTMLButtonElement;
-    constructor(text, onclick) {
-        this.element = document.createElement("button");
-        this.element.innerText = text;
-        this.element.onclick = onclick;
-    }
-}
-
-class GUI {
-    container: HTMLDivElement;
-    countSpan: HTMLSpanElement;
-    groupNamesContainer: HTMLDivElement;
-    constructor() {
-        this.container = <HTMLDivElement>document.getElementById("container");
-        let getGroupsButton = new Button("Get Names", () => {
-            (window as any).ipc.rr.send_command(new GetGroups()).then(names => {
-                this.renderGroupNames(names);
-            });
-        });
-        this.container.appendChild(getGroupsButton.element);
-
-        let groupNamesContainer = document.createElement("div");
-        this.groupNamesContainer = groupNamesContainer;
-        this.container.appendChild(groupNamesContainer);
-    }
-
-    renderGroupNames(names: Array<string>) {
-        this.groupNamesContainer.innerHTML = "";
-        for (let name of names) {
-            let nameElement = document.createElement("span");
-            nameElement.innerText = name;
-            this.groupNamesContainer.appendChild(nameElement);
-        }
-    }
-}
-
 class IPC {
     rr: RequestsRegistry;
     constructor() {
@@ -61,5 +22,5 @@ class IPC {
     ipc.rr.send_command(new Init()).then(() => console.log("Got initial response"));
 
     let groups_view = new GroupsView();
-    groups_view.initiate();
+    groups_view.__initialize();
 }

@@ -9,6 +9,7 @@ extern crate web_view;
 use diesel::SqliteConnection;
 use relanotes_rs::abstracts::Loadable;
 use relanotes_rs::groups_mod::Groups;
+use relanotes_rs::models::{GroupElement, SubGroupElement};
 use web_view::*;
 
 struct State<'a> {
@@ -55,10 +56,11 @@ fn main() {
                         let elements = state
                             .groups
                             .groups_map
-                            .iter()
-                            .map(|(_, e)| e.group.name.as_str())
-                            .collect::<Vec<&str>>();
-                        msg = Some(serde_json::to_string(&elements).unwrap());
+                            .values()
+                            .by_ref()
+                            .map(|e| &e.group)
+                            .collect::<Vec<&GroupElement>>();
+                        msg = serde_json::to_string(&elements).ok();
                     }
                     Cmd::CreateGroup {
                         request_id,
@@ -68,7 +70,29 @@ fn main() {
                         let group_abstraction = state.groups.create(group_name).unwrap();
                     }
                     // Cmd::DeleteGroup => {}
-                    // Cmd::GetSubGroups => {}
+                    Cmd::GetSubGroups {
+                        request_id,
+                        group_id,
+                    } => {
+                        req_id = request_id;
+                        msg = state.groups.groups_map.get_mut(&group_id).and_then(
+                            |group_abstraction| {
+                                if !group_abstraction.subgroups.loaded {
+                                    group_abstraction.subgroups.load().ok()?;
+                                }
+                                serde_json::to_string(
+                                    &group_abstraction
+                                        .subgroups
+                                        .subgroups_map
+                                        .values()
+                                        .by_ref()
+                                        .map(|e| &e.subgroup)
+                                        .collect::<Vec<&SubGroupElement>>(),
+                                )
+                                .ok()
+                            },
+                        );
+                    }
                     // Cmd::CreateSubGroup => {}
                     // Cmd::DeleteSubGroup => {}
                     // Cmd::LoadSubGroup => {}
@@ -136,9 +160,10 @@ pub enum Cmd {
         group_id: i32,
         name: String,
     },
-    // GetSubGroups {
-    //     group_id: i32,
-    // },
+    GetSubGroups {
+        request_id: i64,
+        group_id: i32,
+    },
     // CreateSubGroup {
     //     group_id: i32,
     //     subgroup_name: String,
