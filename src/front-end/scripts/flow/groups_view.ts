@@ -11,10 +11,14 @@ export class GroupsView extends HistoryNode {
     }
     async render(container: HTMLDivElement) {
         let fragment = document.createDocumentFragment();
+        let buttonsContainer = document.createElement('div');
+        buttonsContainer.id = 
         (await this.loadGroups()).forEach(group => {
             let b = document.createElement('button');
             b.innerText = group;
+            b.classList = 
             b.onclick = () => {
+
             };
             fragment.appendChild(b);
         });

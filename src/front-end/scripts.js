@@ -234,8 +234,7 @@ define("flow/groups_view", ["require", "exports", "flow/base/history_node", "too
                             (_a.sent()).forEach(function (group) {
                                 var b = document.createElement('button');
                                 b.innerText = group;
-                                b.onclick = function (e) {
-                                    console.log("Clicked", e);
+                                b.onclick = function () {
                                 };
                                 fragment.appendChild(b);
                             });
