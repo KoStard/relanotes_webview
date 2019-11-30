@@ -29,8 +29,11 @@ fn main() {
 
     let html = format!(
         include_str!("front-end/index.html"),
-        styles = inline_style(include_str!("front-end/styles.css")),
-        scripts = inline_script(include_str!("front-end/require.js"))
+        styles = inline_style(include_str!("front-end/bootstrap.min.css"))
+            + &inline_style(include_str!("front-end/styles.css")),
+        scripts = inline_script(include_str!("front-end/jquery-3.3.1.slim.min.js"))
+            + &inline_script(include_str!("front-end/bootstrap.min.js"))
+            + &inline_script(include_str!("front-end/require.js"))
             + &inline_script(include_str!("front-end/scripts.js")),
     );
 
@@ -53,13 +56,14 @@ fn main() {
                     }
                     Cmd::GetGroups { request_id } => {
                         req_id = request_id;
-                        let elements = state
+                        let mut elements = state
                             .groups
                             .groups_map
                             .values()
                             .by_ref()
                             .map(|e| &e.group)
                             .collect::<Vec<&GroupElement>>();
+                        elements.sort_by(|a, b| a.id.partial_cmp(&b.id).unwrap());
                         msg = serde_json::to_string(&elements).ok();
                     }
                     Cmd::CreateGroup {
@@ -80,16 +84,15 @@ fn main() {
                                 if !group_abstraction.subgroups.loaded {
                                     group_abstraction.subgroups.load().ok()?;
                                 }
-                                serde_json::to_string(
-                                    &group_abstraction
-                                        .subgroups
-                                        .subgroups_map
-                                        .values()
-                                        .by_ref()
-                                        .map(|e| &e.subgroup)
-                                        .collect::<Vec<&SubGroupElement>>(),
-                                )
-                                .ok()
+                                let mut elements = group_abstraction
+                                    .subgroups
+                                    .subgroups_map
+                                    .values()
+                                    .by_ref()
+                                    .map(|e| &e.subgroup)
+                                    .collect::<Vec<&SubGroupElement>>();
+                                elements.sort_by(|a, b| a.id.partial_cmp(&b.id).unwrap());
+                                serde_json::to_string(&elements).ok()
                             },
                         );
                     }

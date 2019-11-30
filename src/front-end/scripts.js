@@ -78,6 +78,17 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __values = (this && this.__values) || function(o) {
+    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+    if (m) return m.call(o);
+    if (o && typeof o.length === "number") return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+};
 define("tools/tools", ["require", "exports"], function (require, exports) {
     "use strict";
     exports.__esModule = true;
@@ -285,7 +296,42 @@ define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "
     }(history_node_1.HistoryNode));
     exports.SubGroupsView = SubGroupsView;
 });
-define("flow/groups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "flow/subgroups_view"], function (require, exports, history_node_2, commands_2, subgroups_view_1) {
+define("tools/html_creators", ["require", "exports"], function (require, exports) {
+    "use strict";
+    exports.__esModule = true;
+    function generate_menu_buttons_list(texts_and_callbacks) {
+        var e_1, _a;
+        var container = document.createElement('div');
+        container.classList.add('container');
+        var row = document.createElement('div');
+        row.classList.add('row');
+        try {
+            for (var texts_and_callbacks_1 = __values(texts_and_callbacks), texts_and_callbacks_1_1 = texts_and_callbacks_1.next(); !texts_and_callbacks_1_1.done; texts_and_callbacks_1_1 = texts_and_callbacks_1.next()) {
+                var _b = __read(texts_and_callbacks_1_1.value, 2), text = _b[0], callback = _b[1];
+                var col = document.createElement('div');
+                col.classList.add('col-md-2');
+                var button = document.createElement('button');
+                button.className = 'btn btn-success btn-block';
+                button.onclick = callback;
+                button.innerText = text;
+                button.type = 'button';
+                col.appendChild(button);
+                row.appendChild(col);
+            }
+        }
+        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        finally {
+            try {
+                if (texts_and_callbacks_1_1 && !texts_and_callbacks_1_1.done && (_a = texts_and_callbacks_1["return"])) _a.call(texts_and_callbacks_1);
+            }
+            finally { if (e_1) throw e_1.error; }
+        }
+        container.appendChild(row);
+        return container;
+    }
+    exports.generate_menu_buttons_list = generate_menu_buttons_list;
+});
+define("flow/groups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "flow/subgroups_view", "tools/html_creators"], function (require, exports, history_node_2, commands_2, subgroups_view_1, html_creators_1) {
     "use strict";
     exports.__esModule = true;
     var GroupsView = /** @class */ (function (_super) {
@@ -299,28 +345,23 @@ define("flow/groups_view", ["require", "exports", "flow/base/history_node", "too
         };
         GroupsView.prototype.render = function (container) {
             return __awaiter(this, void 0, void 0, function () {
-                var fragment;
+                var fragment, _a, _b, _c;
                 var _this = this;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
+                return __generator(this, function (_d) {
+                    switch (_d.label) {
                         case 0:
                             fragment = document.createDocumentFragment();
+                            _b = (_a = fragment).appendChild;
+                            _c = html_creators_1.generate_menu_buttons_list;
                             return [4 /*yield*/, this.loadGroups()];
                         case 1:
-                            // let buttonsContainer = document.createElement('div');
-                            // buttonsContainer.id = 
-                            (_a.sent()).forEach(function (group) {
-                                var b = document.createElement('button');
-                                b.innerText = group.name;
-                                b.onclick = function () {
-                                    console.log(_this.state);
-                                    if (_this.state == history_node_2.HistoryNodeState.ACTIVE) {
-                                        // you have group id here
-                                        _this.openGroup(group.id);
-                                    }
-                                };
-                                fragment.appendChild(b);
-                            });
+                            _b.apply(_a, [_c.apply(void 0, [(_d.sent()).map(function (group) { return [group.name, function () {
+                                            console.log(_this.state);
+                                            if (_this.state == history_node_2.HistoryNodeState.ACTIVE) {
+                                                // you have group id here
+                                                _this.openGroup(group.id);
+                                            }
+                                        }]; })])]);
                             container.innerHTML = "";
                             container.appendChild(fragment);
                             return [2 /*return*/];

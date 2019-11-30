@@ -1,6 +1,7 @@
 import { HistoryNode, HistoryNodeState } from "./base/history_node";
 import { GetGroups } from "../tools/commands";
 import { SubGroupsView } from "./subgroups_view";
+import { generate_menu_buttons_list } from "../tools/html_creators";
 
 export class GroupsView extends HistoryNode {
     constructor() {
@@ -12,20 +13,15 @@ export class GroupsView extends HistoryNode {
     }
     async render(container: HTMLDivElement) {
         let fragment = document.createDocumentFragment();
-        // let buttonsContainer = document.createElement('div');
-        // buttonsContainer.id = 
-        (await this.loadGroups()).forEach(group => {
-            let b = document.createElement('button');
-            b.innerText = group.name;
-            b.onclick = () => {
+        fragment.appendChild(generate_menu_buttons_list(
+            (await this.loadGroups()).map(group => [group.name, () => {
                 console.log(this.state);
                 if (this.state == HistoryNodeState.ACTIVE) {
                     // you have group id here
                     this.openGroup(group.id);
                 }
-            };
-            fragment.appendChild(b);
-        });
+            }])
+        ));
         container.innerHTML = "";
         container.appendChild(fragment);
     }
