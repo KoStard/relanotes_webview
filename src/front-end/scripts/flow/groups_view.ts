@@ -14,13 +14,15 @@ export class GroupsView extends HistoryNode {
     async render(container: HTMLDivElement) {
         let fragment = document.createDocumentFragment();
         fragment.appendChild(generate_menu_buttons_list(
-            (await this.loadGroups()).map(group => [group.name, () => {
-                console.log(this.state);
-                if (this.state == HistoryNodeState.ACTIVE) {
-                    // you have group id here
-                    this.openGroup(group.id);
-                }
-            }])
+            {
+                header: "Select a group",
+                textsAndCallbacks: (await this.loadGroups()).map(group => [group.name, () => {
+                    if (this.state == HistoryNodeState.ACTIVE) {
+                        // you have group id here
+                        this.openGroup(group.id);
+                    }
+                }]),
+            }
         ));
         container.innerHTML = "";
         container.appendChild(fragment);

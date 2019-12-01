@@ -214,9 +214,11 @@ define("flow/base/history_node", ["require", "exports"], function (require, expo
             this.__prev.__initialize();
         };
         HistoryNode.prototype.openNext = function (next) {
-            if (this.__current_next)
+            if (this.__current_next) {
                 this.__current_next.__stop();
+            }
             this.__current_next = next;
+            next.__prev = this;
             next.__initialize();
         };
         HistoryNode.prototype.__stop = function () {
@@ -231,7 +233,64 @@ define("flow/base/history_node", ["require", "exports"], function (require, expo
     }());
     exports.HistoryNode = HistoryNode;
 });
-define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "tools/commands"], function (require, exports, history_node_1, commands_1) {
+define("tools/html_creators", ["require", "exports"], function (require, exports) {
+    "use strict";
+    exports.__esModule = true;
+    function generate_menu_buttons_list(_a) {
+        var e_1, _b;
+        var header = _a.header, textsAndCallbacks = _a.textsAndCallbacks, _c = _a.addBackButton, addBackButton = _c === void 0 ? false : _c, backCallback = _a.backCallback;
+        var container = document.createElement('div');
+        container.classList.add('container');
+        var headerRow = document.createElement('div');
+        headerRow.className = 'row pl-3 pr-3';
+        var headerDiv = document.createElement('div');
+        headerDiv.className = 'col-md-12 pt-4';
+        if (addBackButton) {
+            var backButtonDiv = document.createElement('div');
+            backButtonDiv.className = 'float-left mb-2 h-100 w-15';
+            var backButton = document.createElement('button');
+            backButton.className = 'btn btn-secondary h-60 v-al-middle';
+            backButton.innerText = '<';
+            backButton.onclick = backCallback;
+            backButtonDiv.appendChild(backButton);
+            headerDiv.appendChild(backButtonDiv);
+        }
+        var headerP = document.createElement('p');
+        headerP.className = 'h1 text-center w-75 ml-auto mr-auto text-truncate';
+        headerP.innerText = header;
+        headerDiv.appendChild(headerP);
+        headerRow.appendChild(headerDiv);
+        container.appendChild(headerRow);
+        container.appendChild(document.createElement('hr'));
+        var contentRow = document.createElement('div');
+        contentRow.className = 'row p-3';
+        try {
+            for (var textsAndCallbacks_1 = __values(textsAndCallbacks), textsAndCallbacks_1_1 = textsAndCallbacks_1.next(); !textsAndCallbacks_1_1.done; textsAndCallbacks_1_1 = textsAndCallbacks_1.next()) {
+                var _d = __read(textsAndCallbacks_1_1.value, 2), text = _d[0], callback = _d[1];
+                var col = document.createElement('div');
+                col.className = 'col-md-3 col-lg-2 col-sm-4 p-1';
+                var button = document.createElement('button');
+                button.className = 'btn btn-success btn-block h-100 text-truncate';
+                button.onclick = callback;
+                button.innerText = text;
+                button.type = 'button';
+                col.appendChild(button);
+                contentRow.appendChild(col);
+            }
+        }
+        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        finally {
+            try {
+                if (textsAndCallbacks_1_1 && !textsAndCallbacks_1_1.done && (_b = textsAndCallbacks_1["return"])) _b.call(textsAndCallbacks_1);
+            }
+            finally { if (e_1) throw e_1.error; }
+        }
+        container.appendChild(contentRow);
+        return container;
+    }
+    exports.generate_menu_buttons_list = generate_menu_buttons_list;
+});
+define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "tools/html_creators"], function (require, exports, history_node_1, commands_1, html_creators_1) {
     "use strict";
     exports.__esModule = true;
     var SubGroupsView = /** @class */ (function (_super) {
@@ -248,27 +307,30 @@ define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "
         };
         SubGroupsView.prototype.render = function (container) {
             return __awaiter(this, void 0, void 0, function () {
-                var fragment;
+                var fragment, _a, _b, _c, _d;
                 var _this = this;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
+                return __generator(this, function (_e) {
+                    switch (_e.label) {
                         case 0:
                             fragment = document.createDocumentFragment();
+                            _b = (_a = fragment).appendChild;
+                            _c = html_creators_1.generate_menu_buttons_list;
+                            _d = {
+                                header: "Select a subgroup"
+                            };
                             return [4 /*yield*/, this.loadSubGroups()];
                         case 1:
-                            // let buttonsContainer = document.createElement('div');
-                            // buttonsContainer.id = 
-                            (_a.sent()).forEach(function (group) {
-                                var b = document.createElement('button');
-                                b.innerText = group.name;
-                                b.onclick = function () {
-                                    if (_this.state == history_node_1.HistoryNodeState.ACTIVE) {
-                                        // you have group id here
-                                        _this.openSubGroup(group.id);
-                                    }
-                                };
-                                fragment.appendChild(b);
-                            });
+                            _b.apply(_a, [_c.apply(void 0, [(_d.textsAndCallbacks = (_e.sent()).map(function (group) { return [group.name, function () {
+                                            if (_this.state == history_node_1.HistoryNodeState.ACTIVE) {
+                                                // you have group id here
+                                                _this.openSubGroup(group.id);
+                                            }
+                                        }]; }),
+                                        _d.addBackButton = true,
+                                        _d.backCallback = function () {
+                                            _this.goBack();
+                                        },
+                                        _d)])]);
                             container.innerHTML = "";
                             container.appendChild(fragment);
                             return [2 /*return*/];
@@ -296,42 +358,7 @@ define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "
     }(history_node_1.HistoryNode));
     exports.SubGroupsView = SubGroupsView;
 });
-define("tools/html_creators", ["require", "exports"], function (require, exports) {
-    "use strict";
-    exports.__esModule = true;
-    function generate_menu_buttons_list(texts_and_callbacks) {
-        var e_1, _a;
-        var container = document.createElement('div');
-        container.classList.add('container');
-        var row = document.createElement('div');
-        row.classList.add('row');
-        try {
-            for (var texts_and_callbacks_1 = __values(texts_and_callbacks), texts_and_callbacks_1_1 = texts_and_callbacks_1.next(); !texts_and_callbacks_1_1.done; texts_and_callbacks_1_1 = texts_and_callbacks_1.next()) {
-                var _b = __read(texts_and_callbacks_1_1.value, 2), text = _b[0], callback = _b[1];
-                var col = document.createElement('div');
-                col.classList.add('col-md-2');
-                var button = document.createElement('button');
-                button.className = 'btn btn-success btn-block';
-                button.onclick = callback;
-                button.innerText = text;
-                button.type = 'button';
-                col.appendChild(button);
-                row.appendChild(col);
-            }
-        }
-        catch (e_1_1) { e_1 = { error: e_1_1 }; }
-        finally {
-            try {
-                if (texts_and_callbacks_1_1 && !texts_and_callbacks_1_1.done && (_a = texts_and_callbacks_1["return"])) _a.call(texts_and_callbacks_1);
-            }
-            finally { if (e_1) throw e_1.error; }
-        }
-        container.appendChild(row);
-        return container;
-    }
-    exports.generate_menu_buttons_list = generate_menu_buttons_list;
-});
-define("flow/groups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "flow/subgroups_view", "tools/html_creators"], function (require, exports, history_node_2, commands_2, subgroups_view_1, html_creators_1) {
+define("flow/groups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "flow/subgroups_view", "tools/html_creators"], function (require, exports, history_node_2, commands_2, subgroups_view_1, html_creators_2) {
     "use strict";
     exports.__esModule = true;
     var GroupsView = /** @class */ (function (_super) {
@@ -345,23 +372,26 @@ define("flow/groups_view", ["require", "exports", "flow/base/history_node", "too
         };
         GroupsView.prototype.render = function (container) {
             return __awaiter(this, void 0, void 0, function () {
-                var fragment, _a, _b, _c;
+                var fragment, _a, _b, _c, _d;
                 var _this = this;
-                return __generator(this, function (_d) {
-                    switch (_d.label) {
+                return __generator(this, function (_e) {
+                    switch (_e.label) {
                         case 0:
                             fragment = document.createDocumentFragment();
                             _b = (_a = fragment).appendChild;
-                            _c = html_creators_1.generate_menu_buttons_list;
+                            _c = html_creators_2.generate_menu_buttons_list;
+                            _d = {
+                                header: "Select a group"
+                            };
                             return [4 /*yield*/, this.loadGroups()];
                         case 1:
-                            _b.apply(_a, [_c.apply(void 0, [(_d.sent()).map(function (group) { return [group.name, function () {
-                                            console.log(_this.state);
+                            _b.apply(_a, [_c.apply(void 0, [(_d.textsAndCallbacks = (_e.sent()).map(function (group) { return [group.name, function () {
                                             if (_this.state == history_node_2.HistoryNodeState.ACTIVE) {
                                                 // you have group id here
                                                 _this.openGroup(group.id);
                                             }
-                                        }]; })])]);
+                                        }]; }),
+                                        _d)])]);
                             container.innerHTML = "";
                             container.appendChild(fragment);
                             return [2 /*return*/];

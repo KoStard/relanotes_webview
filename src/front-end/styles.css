@@ -1,3 +1,10 @@
 button {
     color: black;
 }
+
+.v-al-middle {
+    position: relative;
+    top: 50%;
+    transform: translate(0, -50%);
+    margin-bottom: .5rem;
+}
