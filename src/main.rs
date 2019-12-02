@@ -106,22 +106,32 @@ fn main() {
                         subgroup_id,
                     } => {
                         req_id = request_id;
-                        msg = state
-                            .groups
-                            .get_subgroup_mut(subgroup_id)
-                            .and_then(|subgroup| {
-                                if !subgroup.nodes.loaded {
-                                    subgroup.nodes.load().ok()?;
-                                }
-                                let elements = subgroup
-                                    .nodes
-                                    .get_roots()
-                                    .into_iter()
-                                    .map(|id| &subgroup.nodes.nodes_map.get(&id).unwrap().node)
-                                    .collect::<Vec<&Node>>();
-                                // sort nodes
-                                serde_json::to_string(&elements).ok()
-                            });
+                        msg = state.groups.get_group_from_subgroup(subgroup_id).and_then(
+                            |group_id| {
+                                state
+                                    .groups
+                                    .groups_map
+                                    .get_mut(&group_id)?
+                                    .subgroups
+                                    .subgroups_map
+                                    .get_mut(&subgroup_id)
+                                    .and_then(|subgroup| {
+                                        if !subgroup.nodes.loaded {
+                                            subgroup.nodes.load().ok()?;
+                                        }
+                                        let elements = subgroup
+                                            .nodes
+                                            .get_roots()
+                                            .into_iter()
+                                            .map(|id| {
+                                                &subgroup.nodes.nodes_map.get(&id).unwrap().node
+                                            })
+                                            .collect::<Vec<&Node>>();
+                                        // sort nodes
+                                        serde_json::to_string(&elements).ok()
+                                    })
+                            },
+                        );
                     }
                     Cmd::GetChildNodes {
                         request_id,
@@ -129,25 +139,29 @@ fn main() {
                         parent_id,
                     } => {
                         req_id = request_id;
-                        msg = state
-                            .groups
-                            .get_subgroup(subgroup_id)
-                            .and_then(|subgroup| {
-                                subgroup.nodes.get_node_loaded_children(&parent_id).map(
-                                    |children_ids| {
-                                        children_ids
+                        msg = state.groups.get_group_from_subgroup(subgroup_id).and_then(
+                            |group_id| {
+                                state
+                                    .groups
+                                    .groups_map
+                                    .get(&group_id)?
+                                    .subgroups
+                                    .subgroups_map
+                                    .get(&subgroup_id)
+                                    .and_then(|subgroup| {
+                                        let elements = subgroup
+                                            .nodes
+                                            .get_node_loaded_children(&parent_id)?
                                             .into_iter()
                                             .map(|id| {
                                                 &subgroup.nodes.nodes_map.get(&id).unwrap().node
                                             })
-                                            .collect::<Vec<&Node>>()
-                                    },
-                                )
-                            })
-                            .and_then(|nodes| {
-                                // sort nodes
-                                serde_json::to_string(&nodes).ok()
-                            });
+                                            .collect::<Vec<&Node>>();
+                                        // sort nodes
+                                        serde_json::to_string(&elements).ok()
+                                    })
+                            },
+                        );
                     }
                     // Cmd::UpdateNode => {}
                     // Cmd::CreateNode => {}
