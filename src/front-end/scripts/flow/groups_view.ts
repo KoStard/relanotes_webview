@@ -1,7 +1,7 @@
 import { HistoryNode, HistoryNodeState } from "./base/history_node";
 import { GetGroups } from "../tools/commands";
 import { SubGroupsView } from "./subgroups_view";
-import { generate_menu_buttons_list } from "../tools/html_creators";
+import { generateMenuButtonsList } from "../tools/html_creators";
 
 export class GroupsView extends HistoryNode {
     constructor() {
@@ -13,7 +13,7 @@ export class GroupsView extends HistoryNode {
     }
     async render(container: HTMLDivElement) {
         let fragment = document.createDocumentFragment();
-        fragment.appendChild(generate_menu_buttons_list(
+        fragment.appendChild(generateMenuButtonsList(
             {
                 header: "Select a group",
                 textsAndCallbacks: (await this.loadGroups()).map(group => [group.name, () => {

@@ -8,6 +8,7 @@ extern crate web_view;
 
 use diesel::SqliteConnection;
 use relanotes_rs::abstracts::Loadable;
+use relanotes_rs::groups_mod::subgroups_mod::nodes_mod::Node;
 use relanotes_rs::groups_mod::Groups;
 use relanotes_rs::models::{GroupElement, SubGroupElement};
 use web_view::*;
@@ -18,8 +19,9 @@ struct State<'a> {
 
 impl<'a> State<'a> {
     pub fn new(connection: &'a SqliteConnection) -> Self {
-        let groups = Groups::new(connection);
-        State { groups }
+        State {
+            groups: Groups::new(connection),
+        }
     }
 }
 
@@ -99,8 +101,54 @@ fn main() {
                     // Cmd::CreateSubGroup => {}
                     // Cmd::DeleteSubGroup => {}
                     // Cmd::LoadSubGroup => {}
-                    // Cmd::GetRootNodes => {}
-                    // Cmd::GetChildNodes => {}
+                    Cmd::GetRootNodes {
+                        request_id,
+                        subgroup_id,
+                    } => {
+                        req_id = request_id;
+                        msg = state
+                            .groups
+                            .get_subgroup_mut(subgroup_id)
+                            .and_then(|subgroup| {
+                                if !subgroup.nodes.loaded {
+                                    subgroup.nodes.load().ok()?;
+                                }
+                                let elements = subgroup
+                                    .nodes
+                                    .get_roots()
+                                    .into_iter()
+                                    .map(|id| &subgroup.nodes.nodes_map.get(&id).unwrap().node)
+                                    .collect::<Vec<&Node>>();
+                                // sort nodes
+                                serde_json::to_string(&elements).ok()
+                            });
+                    }
+                    Cmd::GetChildNodes {
+                        request_id,
+                        subgroup_id,
+                        parent_id,
+                    } => {
+                        req_id = request_id;
+                        msg = state
+                            .groups
+                            .get_subgroup(subgroup_id)
+                            .and_then(|subgroup| {
+                                subgroup.nodes.get_node_loaded_children(&parent_id).map(
+                                    |children_ids| {
+                                        children_ids
+                                            .into_iter()
+                                            .map(|id| {
+                                                &subgroup.nodes.nodes_map.get(&id).unwrap().node
+                                            })
+                                            .collect::<Vec<&Node>>()
+                                    },
+                                )
+                            })
+                            .and_then(|nodes| {
+                                // sort nodes
+                                serde_json::to_string(&nodes).ok()
+                            });
+                    }
                     // Cmd::UpdateNode => {}
                     // Cmd::CreateNode => {}
                     // Cmd::DeleteNode => {}
@@ -177,12 +225,15 @@ pub enum Cmd {
     // LoadSubGroup {
     //     subgroup_id: i32,
     // },
-    // GetRootNodes {
-    //     subgroup_id: i32,
-    // },
-    // GetChildNodes {
-    //     parent_id: i32,
-    // },
+    GetRootNodes {
+        request_id: i64,
+        subgroup_id: i32,
+    },
+    GetChildNodes {
+        request_id: i64,
+        subgroup_id: i32,
+        parent_id: i32,
+    },
     // UpdateNode {
     //     node_id: i32,
     //     name: String,

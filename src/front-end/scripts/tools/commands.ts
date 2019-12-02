@@ -25,9 +25,20 @@ export class GetGroups extends Command {
     }
 }
 
-
 export class GetSubGroups extends Command {
     constructor(group_id: Number) {
         super("GetSubGroups", { group_id });
+    }
+}
+
+export class GetRootNodes extends Command {
+    constructor(subgroup_id: Number) {
+        super("GetRootNodes", { subgroup_id });
+    }
+}
+
+export class GetChildNodes extends Command {
+    constructor(subgroup_id: Number, parent_id: Number) {
+        super("GetChildNodes", { subgroup_id, parent_id });
     }
 }

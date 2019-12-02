@@ -141,6 +141,22 @@ define("tools/commands", ["require", "exports"], function (require, exports) {
         return GetSubGroups;
     }(Command));
     exports.GetSubGroups = GetSubGroups;
+    var GetRootNodes = /** @class */ (function (_super) {
+        __extends(GetRootNodes, _super);
+        function GetRootNodes(subgroup_id) {
+            return _super.call(this, "GetRootNodes", { subgroup_id: subgroup_id }) || this;
+        }
+        return GetRootNodes;
+    }(Command));
+    exports.GetRootNodes = GetRootNodes;
+    var GetChildNodes = /** @class */ (function (_super) {
+        __extends(GetChildNodes, _super);
+        function GetChildNodes(subgroup_id, parent_id) {
+            return _super.call(this, "GetChildNodes", { subgroup_id: subgroup_id, parent_id: parent_id }) || this;
+        }
+        return GetChildNodes;
+    }(Command));
+    exports.GetChildNodes = GetChildNodes;
 });
 define("tools/requests_registry", ["require", "exports", "tools/tools"], function (require, exports, tools_1) {
     "use strict";
@@ -236,44 +252,44 @@ define("flow/base/history_node", ["require", "exports"], function (require, expo
 define("tools/html_creators", ["require", "exports"], function (require, exports) {
     "use strict";
     exports.__esModule = true;
-    function generate_menu_buttons_list(_a) {
+    function generateMenuButtonsList(_a) {
         var e_1, _b;
         var header = _a.header, textsAndCallbacks = _a.textsAndCallbacks, _c = _a.addBackButton, addBackButton = _c === void 0 ? false : _c, backCallback = _a.backCallback;
-        var container = document.createElement('div');
-        container.classList.add('container');
-        var headerRow = document.createElement('div');
-        headerRow.className = 'row pl-3 pr-3';
-        var headerDiv = document.createElement('div');
-        headerDiv.className = 'col-md-12 pt-4';
+        var container = document.createElement("div");
+        container.classList.add("container");
+        var headerRow = document.createElement("div");
+        headerRow.className = "row pl-3 pr-3";
+        var headerDiv = document.createElement("div");
+        headerDiv.className = "col-md-12 pt-4";
         if (addBackButton) {
-            var backButtonDiv = document.createElement('div');
-            backButtonDiv.className = 'float-left mb-2 h-100 w-15';
-            var backButton = document.createElement('button');
-            backButton.className = 'btn btn-secondary h-60 v-al-middle';
-            backButton.innerText = '<';
+            var backButtonDiv = document.createElement("div");
+            backButtonDiv.className = "float-left mb-2 h-100 w-15";
+            var backButton = document.createElement("button");
+            backButton.className = "btn btn-secondary h-60 v-al-middle";
+            backButton.innerText = "<";
             backButton.onclick = backCallback;
             backButtonDiv.appendChild(backButton);
             headerDiv.appendChild(backButtonDiv);
         }
-        var headerP = document.createElement('p');
-        headerP.className = 'h1 text-center w-75 ml-auto mr-auto text-truncate';
+        var headerP = document.createElement("p");
+        headerP.className = "h1 text-center w-75 ml-auto mr-auto text-truncate";
         headerP.innerText = header;
         headerDiv.appendChild(headerP);
         headerRow.appendChild(headerDiv);
         container.appendChild(headerRow);
-        container.appendChild(document.createElement('hr'));
-        var contentRow = document.createElement('div');
-        contentRow.className = 'row p-3';
+        container.appendChild(document.createElement("hr"));
+        var contentRow = document.createElement("div");
+        contentRow.className = "row p-3";
         try {
             for (var textsAndCallbacks_1 = __values(textsAndCallbacks), textsAndCallbacks_1_1 = textsAndCallbacks_1.next(); !textsAndCallbacks_1_1.done; textsAndCallbacks_1_1 = textsAndCallbacks_1.next()) {
                 var _d = __read(textsAndCallbacks_1_1.value, 2), text = _d[0], callback = _d[1];
-                var col = document.createElement('div');
-                col.className = 'col-md-3 col-lg-2 col-sm-4 p-1';
-                var button = document.createElement('button');
-                button.className = 'btn btn-success btn-block h-100 text-truncate';
+                var col = document.createElement("div");
+                col.className = "col-md-3 col-lg-2 col-sm-4 col-6 p-1";
+                var button = document.createElement("button");
+                button.className = "btn btn-success btn-block h-100 text-truncate";
                 button.onclick = callback;
                 button.innerText = text;
-                button.type = 'button';
+                button.type = "button";
                 col.appendChild(button);
                 contentRow.appendChild(col);
             }
@@ -288,9 +304,79 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
         container.appendChild(contentRow);
         return container;
     }
-    exports.generate_menu_buttons_list = generate_menu_buttons_list;
+    exports.generateMenuButtonsList = generateMenuButtonsList;
+    function generateNodeDetailedView() { }
+    exports.generateNodeDetailedView = generateNodeDetailedView;
 });
-define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "tools/html_creators"], function (require, exports, history_node_1, commands_1, html_creators_1) {
+define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node", "tools/commands"], function (require, exports, history_node_1, commands_1) {
+    "use strict";
+    exports.__esModule = true;
+    var NodeDetailedView = /** @class */ (function (_super) {
+        __extends(NodeDetailedView, _super);
+        function NodeDetailedView(_a) {
+            var node = _a.node, parent_id = _a.parent_id, subgroup_id = _a.subgroup_id;
+            var _this = _super.call(this) || this;
+            _this.node = node;
+            _this.parent_id = parent_id;
+            _this.subgroup_id = subgroup_id;
+            console.log(node);
+            return _this;
+        }
+        NodeDetailedView.prototype.initiate = function () {
+            var container = document.getElementById("container");
+            this.render(container);
+        };
+        NodeDetailedView.prototype.render = function (container) {
+            return __awaiter(this, void 0, void 0, function () {
+                var fragment, _a, _b;
+                return __generator(this, function (_c) {
+                    switch (_c.label) {
+                        case 0:
+                            fragment = document.createDocumentFragment();
+                            // fragment.appendChild(generateMenuButtonsList(
+                            // ));
+                            _b = (_a = console).log;
+                            return [4 /*yield*/, this.loadChildren()];
+                        case 1:
+                            // fragment.appendChild(generateMenuButtonsList(
+                            // ));
+                            _b.apply(_a, [_c.sent()]);
+                            container.innerHTML = "";
+                            container.appendChild(fragment);
+                            return [2 /*return*/];
+                    }
+                });
+            });
+        };
+        NodeDetailedView.prototype.openNode = function (node) { };
+        NodeDetailedView.prototype.loadChildren = function () {
+            return __awaiter(this, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            if (!this.node) return [3 /*break*/, 1];
+                            return [3 /*break*/, 5];
+                        case 1:
+                            if (!this.parent_id) return [3 /*break*/, 2];
+                            return [3 /*break*/, 5];
+                        case 2:
+                            if (!this.subgroup_id) return [3 /*break*/, 4];
+                            return [4 /*yield*/, window.ipc.rr.send_command(new commands_1.GetRootNodes(this.subgroup_id))];
+                        case 3: 
+                        // Viewing the root of the subgroup
+                        return [2 /*return*/, _a.sent()];
+                        case 4: throw new Error("Trying to load uninitialized node detailed view.");
+                        case 5: return [2 /*return*/];
+                    }
+                });
+            });
+        };
+        NodeDetailedView.prototype.stop = function () { };
+        return NodeDetailedView;
+    }(history_node_1.HistoryNode));
+    exports.NodeDetailedView = NodeDetailedView;
+});
+define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "tools/html_creators", "flow/node_detailed_view"], function (require, exports, history_node_2, commands_2, html_creators_1, node_detailed_view_1) {
     "use strict";
     exports.__esModule = true;
     var SubGroupsView = /** @class */ (function (_super) {
@@ -301,7 +387,6 @@ define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "
             return _this;
         }
         SubGroupsView.prototype.initiate = function () {
-            debugger;
             var container = document.getElementById("container");
             this.render(container);
         };
@@ -314,18 +399,21 @@ define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "
                         case 0:
                             fragment = document.createDocumentFragment();
                             _b = (_a = fragment).appendChild;
-                            _c = html_creators_1.generate_menu_buttons_list;
+                            _c = html_creators_1.generateMenuButtonsList;
                             _d = {
                                 header: "Select a subgroup"
                             };
                             return [4 /*yield*/, this.loadSubGroups()];
                         case 1:
-                            _b.apply(_a, [_c.apply(void 0, [(_d.textsAndCallbacks = (_e.sent()).map(function (group) { return [group.name, function () {
-                                            if (_this.state == history_node_1.HistoryNodeState.ACTIVE) {
+                            _b.apply(_a, [_c.apply(void 0, [(_d.textsAndCallbacks = (_e.sent()).map(function (group) { return [
+                                        group.name,
+                                        function () {
+                                            if (_this.state == history_node_2.HistoryNodeState.ACTIVE) {
                                                 // you have group id here
                                                 _this.openSubGroup(group.id);
                                             }
-                                        }]; }),
+                                        }
+                                    ]; }),
                                         _d.addBackButton = true,
                                         _d.backCallback = function () {
                                             _this.goBack();
@@ -344,21 +432,21 @@ define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "
                     switch (_a.label) {
                         case 0:
                             console.log("Loading", this.group_id);
-                            return [4 /*yield*/, window.ipc.rr.send_command(new commands_1.GetSubGroups(this.group_id))];
+                            return [4 /*yield*/, window.ipc.rr.send_command(new commands_2.GetSubGroups(this.group_id))];
                         case 1: return [2 /*return*/, _a.sent()];
                     }
                 });
             });
         };
-        SubGroupsView.prototype.openSubGroup = function (group_id) {
+        SubGroupsView.prototype.openSubGroup = function (subgroup_id) {
+            this.openNext(new node_detailed_view_1.NodeDetailedView({ subgroup_id: subgroup_id }));
         };
-        SubGroupsView.prototype.stop = function () {
-        };
+        SubGroupsView.prototype.stop = function () { };
         return SubGroupsView;
-    }(history_node_1.HistoryNode));
+    }(history_node_2.HistoryNode));
     exports.SubGroupsView = SubGroupsView;
 });
-define("flow/groups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "flow/subgroups_view", "tools/html_creators"], function (require, exports, history_node_2, commands_2, subgroups_view_1, html_creators_2) {
+define("flow/groups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "flow/subgroups_view", "tools/html_creators"], function (require, exports, history_node_3, commands_3, subgroups_view_1, html_creators_2) {
     "use strict";
     exports.__esModule = true;
     var GroupsView = /** @class */ (function (_super) {
@@ -379,14 +467,14 @@ define("flow/groups_view", ["require", "exports", "flow/base/history_node", "too
                         case 0:
                             fragment = document.createDocumentFragment();
                             _b = (_a = fragment).appendChild;
-                            _c = html_creators_2.generate_menu_buttons_list;
+                            _c = html_creators_2.generateMenuButtonsList;
                             _d = {
                                 header: "Select a group"
                             };
                             return [4 /*yield*/, this.loadGroups()];
                         case 1:
                             _b.apply(_a, [_c.apply(void 0, [(_d.textsAndCallbacks = (_e.sent()).map(function (group) { return [group.name, function () {
-                                            if (_this.state == history_node_2.HistoryNodeState.ACTIVE) {
+                                            if (_this.state == history_node_3.HistoryNodeState.ACTIVE) {
                                                 // you have group id here
                                                 _this.openGroup(group.id);
                                             }
@@ -403,7 +491,7 @@ define("flow/groups_view", ["require", "exports", "flow/base/history_node", "too
             return __awaiter(this, void 0, void 0, function () {
                 return __generator(this, function (_a) {
                     switch (_a.label) {
-                        case 0: return [4 /*yield*/, window.ipc.rr.send_command(new commands_2.GetGroups())];
+                        case 0: return [4 /*yield*/, window.ipc.rr.send_command(new commands_3.GetGroups())];
                         case 1: return [2 /*return*/, _a.sent()];
                     }
                 });
@@ -415,12 +503,12 @@ define("flow/groups_view", ["require", "exports", "flow/base/history_node", "too
         GroupsView.prototype.stop = function () {
         };
         return GroupsView;
-    }(history_node_2.HistoryNode));
+    }(history_node_3.HistoryNode));
     exports.GroupsView = GroupsView;
 });
 // Compile with this command
 // tsc --outFile src/front-end/scripts.js --module amd src/front-end/scripts/app.ts
-define("app", ["require", "exports", "tools/requests_registry", "tools/commands", "flow/groups_view"], function (require, exports, requests_registry_1, commands_3, groups_view_1) {
+define("app", ["require", "exports", "tools/requests_registry", "tools/commands", "flow/groups_view"], function (require, exports, requests_registry_1, commands_4, groups_view_1) {
     "use strict";
     exports.__esModule = true;
     var IPC = /** @class */ (function () {
@@ -434,7 +522,7 @@ define("app", ["require", "exports", "tools/requests_registry", "tools/commands"
         // Initializing the app
         var ipc = new IPC();
         window.ipc = ipc; // Saving reference in window
-        ipc.rr.send_command(new commands_3.Init()).then(function () { return console.log("Got initial response"); });
+        ipc.rr.send_command(new commands_4.Init()).then(function () { return console.log("Got initial response"); });
         var groups_view = new groups_view_1.GroupsView();
         groups_view.__initialize();
     }
