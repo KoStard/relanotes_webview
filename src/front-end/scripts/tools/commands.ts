@@ -6,6 +6,10 @@ export class Command {
         this.args = args;
     }
     serialize() {
+        console.log({
+            cmd: this.cmd,
+            ...this.args
+        });
         return {
             cmd: this.cmd,
             ...this.args

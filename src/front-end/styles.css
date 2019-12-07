@@ -8,3 +8,42 @@ button {
     transform: translate(0, -50%);
     margin-bottom: .5rem;
 }
+
+.overflow-scrollable-auto {
+    overflow: auto;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+}
+
+.inactive {
+    pointer-events: none;
+}
+
+.breadcrumb {
+    font-size: 1em;
+    line-height: 1em;
+}
+
+.fill-absolute {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+}
+
+.fit-content {
+    height: fit-content;
+}
+
+.breadcrumb-background {
+    background-color: #e9ecef;
+}

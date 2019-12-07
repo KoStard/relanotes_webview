@@ -112,6 +112,7 @@ define("tools/commands", ["require", "exports"], function (require, exports) {
             this.args = args;
         }
         Command.prototype.serialize = function () {
+            console.log(__assign({ cmd: this.cmd }, this.args));
             return __assign({ cmd: this.cmd }, this.args);
         };
         return Command;
@@ -305,42 +306,174 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
         return container;
     }
     exports.generateMenuButtonsList = generateMenuButtonsList;
-    function generateNodeDetailedView() { }
+    function generateNodeDetailedView(_a) {
+        var e_2, _b, e_3, _c;
+        var backCallback = _a.backCallback, absolutePath = _a.absolutePath, pathClickCallback = _a.pathClickCallback, childrenNodes = _a.childrenNodes, childClickCallback = _a.childClickCallback, addClickCallback = _a.addClickCallback, deleteClickCallback = _a.deleteClickCallback, onNameChange = _a.onNameChange, onDesriptionChange = _a.onDesriptionChange, currentNode = _a.currentNode, activateInputs = _a.activateInputs;
+        var container = document.createElement("div");
+        container.className =
+            "container-fluid overflow-hidden d-none d-flex flex-column fill-absolute";
+        var headerDiv = document.createElement("div");
+        headerDiv.className = "row pb-3 flex-shrink-0";
+        var headerFlexRow = document.createElement("div");
+        headerFlexRow.className = "d-flex flex-row bd-highlight w-100 breadcrumb-background";
+        var backButton = document.createElement("button");
+        backButton.className = "btn btn-secondary v-al-middle ml-2 fit-content";
+        backButton.innerText = "<";
+        backButton.onclick = backCallback;
+        headerFlexRow.appendChild(backButton);
+        var breadcrumbNav = document.createElement("nav");
+        breadcrumbNav.className = "w-100";
+        var breadcrumbOl = document.createElement("ol");
+        breadcrumbOl.className = "w-100 breadcrumb m-0";
+        try {
+            for (var absolutePath_1 = __values(absolutePath), absolutePath_1_1 = absolutePath_1.next(); !absolutePath_1_1.done; absolutePath_1_1 = absolutePath_1.next()) {
+                var pathNode = absolutePath_1_1.value;
+                var breadcrumbLi = document.createElement("li");
+                breadcrumbLi.className = "breadcrumb-item";
+                var breadcrumbA = document.createElement("a");
+                breadcrumbA.href = "#";
+                breadcrumbA.innerText = pathNode;
+                breadcrumbA.onclick = pathClickCallback;
+                breadcrumbLi.appendChild(breadcrumbA);
+                breadcrumbOl.appendChild(breadcrumbLi);
+            }
+        }
+        catch (e_2_1) { e_2 = { error: e_2_1 }; }
+        finally {
+            try {
+                if (absolutePath_1_1 && !absolutePath_1_1.done && (_b = absolutePath_1["return"])) _b.call(absolutePath_1);
+            }
+            finally { if (e_2) throw e_2.error; }
+        }
+        var currentNodeBreadcrumbLi = document.createElement("li");
+        currentNodeBreadcrumbLi.className = "breadcrumb-item active";
+        currentNodeBreadcrumbLi.attributes["aria-current"] = "page";
+        currentNodeBreadcrumbLi.innerText = activateInputs
+            ? currentNode
+                ? currentNode.name
+                : ""
+            : "root";
+        breadcrumbOl.appendChild(currentNodeBreadcrumbLi);
+        breadcrumbNav.appendChild(breadcrumbOl);
+        headerFlexRow.appendChild(breadcrumbNav);
+        headerDiv.appendChild(headerFlexRow);
+        container.appendChild(headerDiv);
+        var contentDiv = document.createElement("div");
+        contentDiv.className = "row h-100 pb-3";
+        var childrenDiv = document.createElement("div");
+        childrenDiv.className = "col-6 h-100 overflow-scrollable-auto pt-1 pb-1";
+        try {
+            for (var childrenNodes_1 = __values(childrenNodes), childrenNodes_1_1 = childrenNodes_1.next(); !childrenNodes_1_1.done; childrenNodes_1_1 = childrenNodes_1.next()) {
+                var child = childrenNodes_1_1.value;
+                var childButton = document.createElement("button");
+                childButton.className = "w-100 btn btn-outline-secondary mb-3";
+                childButton.innerText = child.name;
+                childButton.onclick = childClickCallback;
+                childButton.dataset.id = child.id;
+                childrenDiv.appendChild(childButton);
+            }
+        }
+        catch (e_3_1) { e_3 = { error: e_3_1 }; }
+        finally {
+            try {
+                if (childrenNodes_1_1 && !childrenNodes_1_1.done && (_c = childrenNodes_1["return"])) _c.call(childrenNodes_1);
+            }
+            finally { if (e_3) throw e_3.error; }
+        }
+        var addButton = document.createElement("button");
+        addButton.className = "w-100 btn btn-outline-success mb-3";
+        addButton.innerText = "Add";
+        addButton.onclick = addClickCallback;
+        childrenDiv.appendChild(addButton);
+        var deleteButton = document.createElement("button");
+        deleteButton.className = "w-100 btn btn-outline-danger mb-3";
+        deleteButton.innerText = "Delete";
+        deleteButton.onclick = deleteClickCallback;
+        childrenDiv.appendChild(deleteButton);
+        contentDiv.appendChild(childrenDiv);
+        var detailsDiv = document.createElement("div");
+        detailsDiv.className = "col-6 h-100 d-none d-flex flex-column pt-1";
+        var nameInput = document.createElement("input");
+        nameInput.className = "form-control mb-3 text-truncate";
+        detailsDiv.appendChild(nameInput);
+        var descriptionTextarea = document.createElement("textarea");
+        descriptionTextarea.className = "form-control flex-grow-1";
+        if (!activateInputs) {
+            nameInput.classList.add("inactive");
+            descriptionTextarea.classList.add("inactive");
+        }
+        else if (!currentNode) {
+            descriptionTextarea.classList.add("inactive");
+        }
+        nameInput.onchange = function (event) {
+            if (nameInput.value) {
+                descriptionTextarea.classList.remove("inactive");
+            }
+            else {
+                descriptionTextarea.classList.add("inactive");
+                if (currentNode && currentNode.name) {
+                    nameInput.value = currentNode.name;
+                    return;
+                }
+            }
+            onNameChange(event);
+            currentNodeBreadcrumbLi.innerText = nameInput.value;
+        };
+        descriptionTextarea.onchange = onDesriptionChange;
+        detailsDiv.appendChild(descriptionTextarea);
+        contentDiv.appendChild(detailsDiv);
+        container.appendChild(contentDiv);
+        return container;
+    }
     exports.generateNodeDetailedView = generateNodeDetailedView;
 });
-define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node", "tools/commands"], function (require, exports, history_node_1, commands_1) {
+define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node", "tools/html_creators", "tools/commands"], function (require, exports, history_node_1, html_creators_1, commands_1) {
     "use strict";
     exports.__esModule = true;
     var NodeDetailedView = /** @class */ (function (_super) {
         __extends(NodeDetailedView, _super);
         function NodeDetailedView(_a) {
-            var node = _a.node, parent_id = _a.parent_id, subgroup_id = _a.subgroup_id;
+            var node = _a.node, parent_id = _a.parent_id, subgroup_id = _a.subgroup_id, path = _a.path;
             var _this = _super.call(this) || this;
             _this.node = node;
-            _this.parent_id = parent_id;
+            _this.parent_id = node ? node.associated_node_id : parent_id;
             _this.subgroup_id = subgroup_id;
+            _this.path = path;
             console.log(node);
             return _this;
         }
         NodeDetailedView.prototype.initiate = function () {
             var container = document.getElementById("container");
+            console.log("Initialized");
             this.render(container);
         };
         NodeDetailedView.prototype.render = function (container) {
             return __awaiter(this, void 0, void 0, function () {
-                var fragment, _a, _b;
-                return __generator(this, function (_c) {
-                    switch (_c.label) {
+                var _a, fragment;
+                var _this = this;
+                return __generator(this, function (_b) {
+                    switch (_b.label) {
                         case 0:
-                            fragment = document.createDocumentFragment();
-                            // fragment.appendChild(generateMenuButtonsList(
-                            // ));
-                            _b = (_a = console).log;
+                            _a = this;
                             return [4 /*yield*/, this.loadChildren()];
                         case 1:
-                            // fragment.appendChild(generateMenuButtonsList(
-                            // ));
-                            _b.apply(_a, [_c.sent()]);
+                            _a.nodes = _b.sent();
+                            console.log('this.nodes', this.nodes);
+                            fragment = document.createDocumentFragment();
+                            fragment.appendChild(html_creators_1.generateNodeDetailedView({
+                                backCallback: function () { return _this.goBack(); },
+                                absolutePath: this.path,
+                                pathClickCallback: function () { console.log("Path click", arguments); },
+                                childrenNodes: this.nodes,
+                                childClickCallback: function (e) { return _this.openNode(_this.nodes.find(function (node) { return node.id == e.currentTarget.dataset.id; })); },
+                                addClickCallback: function () { return console.log("Add"); },
+                                deleteClickCallback: function () { return console.log("Delete"); },
+                                onNameChange: function () { return console.log("Name changed"); },
+                                onDesriptionChange: function () { return console.log("Description changed"); },
+                                currentNode: this.node,
+                                // We'll activate the inputs when creating a new node... But it will have a parent
+                                activateInputs: Boolean(this.parent_id)
+                            }));
                             container.innerHTML = "";
                             container.appendChild(fragment);
                             return [2 /*return*/];
@@ -348,25 +481,54 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
                 });
             });
         };
-        NodeDetailedView.prototype.openNode = function (node) { };
+        NodeDetailedView.prototype.openNode = function (node) {
+            // Increment the path here
+            console.log(node.name, this.path, this.path.concat(node.name));
+            var childNodeView = new NodeDetailedView({
+                node: node,
+                path: this.path.concat(node.name),
+                subgroup_id: this.subgroup_id
+            });
+            this.openNext(childNodeView);
+        };
+        NodeDetailedView.prototype.addChild = function () {
+        };
+        NodeDetailedView.prototype.deleteNode = function () {
+        };
+        NodeDetailedView.prototype.updateName = function () {
+        };
+        NodeDetailedView.prototype.updateDescription = function () {
+        };
+        NodeDetailedView.prototype.findNodeViewFromHistory = function (node_id) {
+            if (this.node && this.node.id == node_id) {
+                return this;
+            }
+            if (this.__prev instanceof NodeDetailedView) {
+                return this.__prev.findNodeViewFromHistory(node_id);
+            }
+            throw new Error("Could not find node from history with id " + node_id);
+        };
         NodeDetailedView.prototype.loadChildren = function () {
             return __awaiter(this, void 0, void 0, function () {
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
-                            if (!this.node) return [3 /*break*/, 1];
-                            return [3 /*break*/, 5];
-                        case 1:
-                            if (!this.parent_id) return [3 /*break*/, 2];
-                            return [3 /*break*/, 5];
+                            if (!this.node) return [3 /*break*/, 2];
+                            // Just showing the parents
+                            console.log("Will load children", this.subgroup_id);
+                            return [4 /*yield*/, window.ipc.rr.send_command(new commands_1.GetChildNodes(this.subgroup_id, this.node.id))];
+                        case 1: return [2 /*return*/, _a.sent()];
                         case 2:
-                            if (!this.subgroup_id) return [3 /*break*/, 4];
+                            if (!this.parent_id) return [3 /*break*/, 3];
+                            return [3 /*break*/, 6];
+                        case 3:
+                            if (!this.subgroup_id) return [3 /*break*/, 5];
                             return [4 /*yield*/, window.ipc.rr.send_command(new commands_1.GetRootNodes(this.subgroup_id))];
-                        case 3: 
+                        case 4: 
                         // Viewing the root of the subgroup
                         return [2 /*return*/, _a.sent()];
-                        case 4: throw new Error("Trying to load uninitialized node detailed view.");
-                        case 5: return [2 /*return*/];
+                        case 5: throw new Error("Trying to load uninitialized node detailed view.");
+                        case 6: return [2 /*return*/];
                     }
                 });
             });
@@ -376,7 +538,7 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
     }(history_node_1.HistoryNode));
     exports.NodeDetailedView = NodeDetailedView;
 });
-define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "tools/html_creators", "flow/node_detailed_view"], function (require, exports, history_node_2, commands_2, html_creators_1, node_detailed_view_1) {
+define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "tools/html_creators", "flow/node_detailed_view"], function (require, exports, history_node_2, commands_2, html_creators_2, node_detailed_view_1) {
     "use strict";
     exports.__esModule = true;
     var SubGroupsView = /** @class */ (function (_super) {
@@ -399,7 +561,7 @@ define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "
                         case 0:
                             fragment = document.createDocumentFragment();
                             _b = (_a = fragment).appendChild;
-                            _c = html_creators_1.generateMenuButtonsList;
+                            _c = html_creators_2.generateMenuButtonsList;
                             _d = {
                                 header: "Select a subgroup"
                             };
@@ -439,14 +601,14 @@ define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "
             });
         };
         SubGroupsView.prototype.openSubGroup = function (subgroup_id) {
-            this.openNext(new node_detailed_view_1.NodeDetailedView({ subgroup_id: subgroup_id }));
+            this.openNext(new node_detailed_view_1.NodeDetailedView({ subgroup_id: subgroup_id, path: [] }));
         };
         SubGroupsView.prototype.stop = function () { };
         return SubGroupsView;
     }(history_node_2.HistoryNode));
     exports.SubGroupsView = SubGroupsView;
 });
-define("flow/groups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "flow/subgroups_view", "tools/html_creators"], function (require, exports, history_node_3, commands_3, subgroups_view_1, html_creators_2) {
+define("flow/groups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "flow/subgroups_view", "tools/html_creators"], function (require, exports, history_node_3, commands_3, subgroups_view_1, html_creators_3) {
     "use strict";
     exports.__esModule = true;
     var GroupsView = /** @class */ (function (_super) {
@@ -467,7 +629,7 @@ define("flow/groups_view", ["require", "exports", "flow/base/history_node", "too
                         case 0:
                             fragment = document.createDocumentFragment();
                             _b = (_a = fragment).appendChild;
-                            _c = html_creators_2.generateMenuButtonsList;
+                            _c = html_creators_3.generateMenuButtonsList;
                             _d = {
                                 header: "Select a group"
                             };

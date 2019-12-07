@@ -41,7 +41,7 @@ export class SubGroupsView extends HistoryNode {
         return await (window as any).ipc.rr.send_command(new GetSubGroups(this.group_id));
     }
     openSubGroup(subgroup_id: Number) {
-        this.openNext(new NodeDetailedView({ subgroup_id }));
+        this.openNext(new NodeDetailedView({ subgroup_id, path: [] }));
     }
     stop() {}
 }
