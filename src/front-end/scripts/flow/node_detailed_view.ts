@@ -24,7 +24,6 @@ export class NodeDetailedView extends HistoryNode {
         this.parent_id = node ? node.associated_node_id : parent_id;
         this.subgroup_id = subgroup_id;
         this.path = path;
-        console.log(node);
     }
     initiate() {
         let container = <HTMLDivElement>document.getElementById("container");
@@ -33,30 +32,35 @@ export class NodeDetailedView extends HistoryNode {
     }
     async render(container: HTMLDivElement) {
         this.nodes = await this.loadChildren();
-        console.log('this.nodes', this.nodes);
         let fragment = document.createDocumentFragment();
         fragment.appendChild(generateNodeDetailedView(
             {
                 backCallback: () => this.goBack(),
                 absolutePath: this.path,
-                pathClickCallback: function () {console.log("Path click", arguments)},
+                pathClickCallback: function () { console.log("Path click", arguments) },
                 childrenNodes: this.nodes,
                 childClickCallback: e => this.openNode(this.nodes.find(node => node.id == e.currentTarget.dataset.id)),
-                addClickCallback: () => console.log("Add"),
-                deleteClickCallback: () => console.log("Delete"),
-                onNameChange: () => console.log("Name changed"),
-                onDesriptionChange: () => console.log("Description changed"),
+                addClickCallback: () => this.addChild(),
+                deleteClickCallback: () => this.deleteNode(),
+                onNameChange: () => this.updateName(),
+                onDesriptionChange: () => this.updateDescription(),
                 currentNode: this.node,
-                // We'll activate the inputs when creating a new node... But it will have a parent
-                activateInputs: Boolean(this.parent_id),
+                activateInputs: !this.isRoot(),
+                activateAddButton: this.canHaveChildren(),
+                activateDeleteButton: Boolean(this.node)
             }
         ));
         container.innerHTML = "";
         container.appendChild(fragment);
     }
+    isRoot(): boolean {
+        return !this.node && !this.path.length;
+    }
+    canHaveChildren(): boolean {
+        return this.isRoot() || this.node;
+    }
     openNode(node) {
         // Increment the path here
-        console.log(node.name, this.path, this.path.concat(node.name));
         let childNodeView = new NodeDetailedView({
             node: node,
             path: this.path.concat(node.name),
@@ -64,8 +68,17 @@ export class NodeDetailedView extends HistoryNode {
         });
         this.openNext(childNodeView);
     }
-    addChild() { 
-
+    addChild() {
+        // Will create a temporary view without a node - will create node only when name is inputted
+        // This can be used only if you are in the root or you have opened an existing node
+        if (!this.canHaveChildren()) {
+            throw new Error("This node can't have a child het!");
+        }
+        let childNodeView = new NodeDetailedView({
+            path: this.path.concat(""),
+            subgroup_id: this.subgroup_id
+        });
+        this.openNext(childNodeView);
     }
     deleteNode() {
 
@@ -73,7 +86,7 @@ export class NodeDetailedView extends HistoryNode {
     updateName() {
 
     }
-    updateDescription() { 
+    updateDescription() {
 
     }
     findNodeViewFromHistory(node_id) {
@@ -100,5 +113,5 @@ export class NodeDetailedView extends HistoryNode {
             throw new Error("Trying to load uninitialized node detailed view.");
         }
     }
-    stop() {}
+    stop() { }
 }

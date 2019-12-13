@@ -112,7 +112,6 @@ define("tools/commands", ["require", "exports"], function (require, exports) {
             this.args = args;
         }
         Command.prototype.serialize = function () {
-            console.log(__assign({ cmd: this.cmd }, this.args));
             return __assign({ cmd: this.cmd }, this.args);
         };
         return Command;
@@ -221,14 +220,17 @@ define("flow/base/history_node", ["require", "exports"], function (require, expo
     (function (HistoryNodeState) {
         HistoryNodeState[HistoryNodeState["ACTIVE"] = 0] = "ACTIVE";
         HistoryNodeState[HistoryNodeState["STOPPED"] = 1] = "STOPPED";
+        HistoryNodeState[HistoryNodeState["PAUSED"] = 2] = "PAUSED"; // Another node was opened, but this one is in the history
     })(HistoryNodeState = exports.HistoryNodeState || (exports.HistoryNodeState = {}));
     var HistoryNode = /** @class */ (function () {
         function HistoryNode() {
         }
         HistoryNode.prototype.goBack = function () {
-            this.__prev.__current_next = null;
-            this.__stop();
-            this.__prev.__initialize();
+            if (this.__prev) {
+                this.__prev.__current_next = null;
+                this.__stop();
+                this.__prev.__initialize();
+            }
         };
         HistoryNode.prototype.openNext = function (next) {
             if (this.__current_next) {
@@ -237,14 +239,21 @@ define("flow/base/history_node", ["require", "exports"], function (require, expo
             this.__current_next = next;
             next.__prev = this;
             next.__initialize();
+            this.state = HistoryNodeState.PAUSED;
         };
         HistoryNode.prototype.__stop = function () {
             this.state = HistoryNodeState.STOPPED;
             this.stop();
         };
         HistoryNode.prototype.__initialize = function () {
+            var _this = this;
             this.state = HistoryNodeState.ACTIVE;
             this.initiate();
+            document.addEventListener('keyup', function (event) {
+                if (event.keyCode == 27 && _this.state == HistoryNodeState.ACTIVE) {
+                    _this.goBack();
+                }
+            });
         };
         return HistoryNode;
     }());
@@ -282,8 +291,8 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
         var contentRow = document.createElement("div");
         contentRow.className = "row p-3";
         try {
-            for (var textsAndCallbacks_1 = __values(textsAndCallbacks), textsAndCallbacks_1_1 = textsAndCallbacks_1.next(); !textsAndCallbacks_1_1.done; textsAndCallbacks_1_1 = textsAndCallbacks_1.next()) {
-                var _d = __read(textsAndCallbacks_1_1.value, 2), text = _d[0], callback = _d[1];
+            for (var _d = __values(textsAndCallbacks.entries()), _e = _d.next(); !_e.done; _e = _d.next()) {
+                var _f = __read(_e.value, 2), index = _f[0], _g = __read(_f[1], 2), text = _g[0], callback = _g[1];
                 var col = document.createElement("div");
                 col.className = "col-md-3 col-lg-2 col-sm-4 col-6 p-1";
                 var button = document.createElement("button");
@@ -293,12 +302,16 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
                 button.type = "button";
                 col.appendChild(button);
                 contentRow.appendChild(col);
+                if (index == 0) {
+                    // The first group/subgroup will be automatically selected
+                    button.autofocus = true;
+                }
             }
         }
         catch (e_1_1) { e_1 = { error: e_1_1 }; }
         finally {
             try {
-                if (textsAndCallbacks_1_1 && !textsAndCallbacks_1_1.done && (_b = textsAndCallbacks_1["return"])) _b.call(textsAndCallbacks_1);
+                if (_e && !_e.done && (_b = _d["return"])) _b.call(_d);
             }
             finally { if (e_1) throw e_1.error; }
         }
@@ -308,7 +321,7 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
     exports.generateMenuButtonsList = generateMenuButtonsList;
     function generateNodeDetailedView(_a) {
         var e_2, _b, e_3, _c;
-        var backCallback = _a.backCallback, absolutePath = _a.absolutePath, pathClickCallback = _a.pathClickCallback, childrenNodes = _a.childrenNodes, childClickCallback = _a.childClickCallback, addClickCallback = _a.addClickCallback, deleteClickCallback = _a.deleteClickCallback, onNameChange = _a.onNameChange, onDesriptionChange = _a.onDesriptionChange, currentNode = _a.currentNode, activateInputs = _a.activateInputs;
+        var backCallback = _a.backCallback, absolutePath = _a.absolutePath, pathClickCallback = _a.pathClickCallback, childrenNodes = _a.childrenNodes, childClickCallback = _a.childClickCallback, addClickCallback = _a.addClickCallback, deleteClickCallback = _a.deleteClickCallback, onNameChange = _a.onNameChange, onDesriptionChange = _a.onDesriptionChange, currentNode = _a.currentNode, activateInputs = _a.activateInputs, activateAddButton = _a.activateAddButton, activateDeleteButton = _a.activateDeleteButton;
         var container = document.createElement("div");
         container.className =
             "container-fluid overflow-hidden d-none d-flex flex-column fill-absolute";
@@ -348,7 +361,7 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
         var currentNodeBreadcrumbLi = document.createElement("li");
         currentNodeBreadcrumbLi.className = "breadcrumb-item active";
         currentNodeBreadcrumbLi.attributes["aria-current"] = "page";
-        currentNodeBreadcrumbLi.innerText = activateInputs
+        currentNodeBreadcrumbLi.innerText = absolutePath
             ? currentNode
                 ? currentNode.name
                 : ""
@@ -363,20 +376,23 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
         var childrenDiv = document.createElement("div");
         childrenDiv.className = "col-6 h-100 overflow-scrollable-auto pt-1 pb-1";
         try {
-            for (var childrenNodes_1 = __values(childrenNodes), childrenNodes_1_1 = childrenNodes_1.next(); !childrenNodes_1_1.done; childrenNodes_1_1 = childrenNodes_1.next()) {
-                var child = childrenNodes_1_1.value;
+            for (var _d = __values(childrenNodes.entries()), _e = _d.next(); !_e.done; _e = _d.next()) {
+                var _f = __read(_e.value, 2), index = _f[0], child = _f[1];
                 var childButton = document.createElement("button");
                 childButton.className = "w-100 btn btn-outline-secondary mb-3";
                 childButton.innerText = child.name;
                 childButton.onclick = childClickCallback;
                 childButton.dataset.id = child.id;
                 childrenDiv.appendChild(childButton);
+                if (!activateInputs && index == 0) {
+                    childButton.autofocus = true; // The first child node button will be focued if the inputs are disabled
+                }
             }
         }
         catch (e_3_1) { e_3 = { error: e_3_1 }; }
         finally {
             try {
-                if (childrenNodes_1_1 && !childrenNodes_1_1.done && (_c = childrenNodes_1["return"])) _c.call(childrenNodes_1);
+                if (_e && !_e.done && (_c = _d["return"])) _c.call(_d);
             }
             finally { if (e_3) throw e_3.error; }
         }
@@ -385,11 +401,23 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
         addButton.innerText = "Add";
         addButton.onclick = addClickCallback;
         childrenDiv.appendChild(addButton);
+        if (activateAddButton) {
+            if (!childrenNodes.length && !activateInputs) {
+                // When the inputs are disabled and there is no children the add button will be activated
+                addButton.autofocus = true;
+            }
+        }
+        else {
+            addButton.disabled = true;
+        }
         var deleteButton = document.createElement("button");
         deleteButton.className = "w-100 btn btn-outline-danger mb-3";
         deleteButton.innerText = "Delete";
         deleteButton.onclick = deleteClickCallback;
         childrenDiv.appendChild(deleteButton);
+        if (!activateDeleteButton) {
+            deleteButton.disabled = true;
+        }
         contentDiv.appendChild(childrenDiv);
         var detailsDiv = document.createElement("div");
         detailsDiv.className = "col-6 h-100 d-none d-flex flex-column pt-1";
@@ -399,18 +427,21 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
         var descriptionTextarea = document.createElement("textarea");
         descriptionTextarea.className = "form-control flex-grow-1";
         if (!activateInputs) {
-            nameInput.classList.add("inactive");
-            descriptionTextarea.classList.add("inactive");
+            nameInput.disabled = true;
+            descriptionTextarea.disabled = true;
         }
-        else if (!currentNode) {
-            descriptionTextarea.classList.add("inactive");
+        else {
+            nameInput.autofocus = true;
+            if (!currentNode) {
+                descriptionTextarea.disabled = true;
+            }
         }
         nameInput.onchange = function (event) {
             if (nameInput.value) {
                 descriptionTextarea.classList.remove("inactive");
             }
             else {
-                descriptionTextarea.classList.add("inactive");
+                descriptionTextarea.disabled = true;
                 if (currentNode && currentNode.name) {
                     nameInput.value = currentNode.name;
                     return;
@@ -439,7 +470,6 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
             _this.parent_id = node ? node.associated_node_id : parent_id;
             _this.subgroup_id = subgroup_id;
             _this.path = path;
-            console.log(node);
             return _this;
         }
         NodeDetailedView.prototype.initiate = function () {
@@ -458,7 +488,6 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
                             return [4 /*yield*/, this.loadChildren()];
                         case 1:
                             _a.nodes = _b.sent();
-                            console.log('this.nodes', this.nodes);
                             fragment = document.createDocumentFragment();
                             fragment.appendChild(html_creators_1.generateNodeDetailedView({
                                 backCallback: function () { return _this.goBack(); },
@@ -466,13 +495,14 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
                                 pathClickCallback: function () { console.log("Path click", arguments); },
                                 childrenNodes: this.nodes,
                                 childClickCallback: function (e) { return _this.openNode(_this.nodes.find(function (node) { return node.id == e.currentTarget.dataset.id; })); },
-                                addClickCallback: function () { return console.log("Add"); },
-                                deleteClickCallback: function () { return console.log("Delete"); },
-                                onNameChange: function () { return console.log("Name changed"); },
-                                onDesriptionChange: function () { return console.log("Description changed"); },
+                                addClickCallback: function () { return _this.addChild(); },
+                                deleteClickCallback: function () { return _this.deleteNode(); },
+                                onNameChange: function () { return _this.updateName(); },
+                                onDesriptionChange: function () { return _this.updateDescription(); },
                                 currentNode: this.node,
-                                // We'll activate the inputs when creating a new node... But it will have a parent
-                                activateInputs: Boolean(this.parent_id)
+                                activateInputs: !this.isRoot(),
+                                activateAddButton: this.canHaveChildren(),
+                                activateDeleteButton: Boolean(this.node)
                             }));
                             container.innerHTML = "";
                             container.appendChild(fragment);
@@ -481,9 +511,14 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
                 });
             });
         };
+        NodeDetailedView.prototype.isRoot = function () {
+            return !this.node && !this.path.length;
+        };
+        NodeDetailedView.prototype.canHaveChildren = function () {
+            return this.isRoot() || this.node;
+        };
         NodeDetailedView.prototype.openNode = function (node) {
             // Increment the path here
-            console.log(node.name, this.path, this.path.concat(node.name));
             var childNodeView = new NodeDetailedView({
                 node: node,
                 path: this.path.concat(node.name),
@@ -492,6 +527,16 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
             this.openNext(childNodeView);
         };
         NodeDetailedView.prototype.addChild = function () {
+            // Will create a temporary view without a node - will create node only when name is inputted
+            // This can be used only if you are in the root or you have opened an existing node
+            if (!this.canHaveChildren()) {
+                throw new Error("This node can't have a child het!");
+            }
+            var childNodeView = new NodeDetailedView({
+                path: this.path.concat(""),
+                subgroup_id: this.subgroup_id
+            });
+            this.openNext(childNodeView);
         };
         NodeDetailedView.prototype.deleteNode = function () {
         };
@@ -592,9 +637,7 @@ define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "
             return __awaiter(this, void 0, void 0, function () {
                 return __generator(this, function (_a) {
                     switch (_a.label) {
-                        case 0:
-                            console.log("Loading", this.group_id);
-                            return [4 /*yield*/, window.ipc.rr.send_command(new commands_2.GetSubGroups(this.group_id))];
+                        case 0: return [4 /*yield*/, window.ipc.rr.send_command(new commands_2.GetSubGroups(this.group_id))];
                         case 1: return [2 /*return*/, _a.sent()];
                     }
                 });

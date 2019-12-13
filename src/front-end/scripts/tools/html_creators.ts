@@ -40,7 +40,7 @@ export function generateMenuButtonsList({
 
     let contentRow = document.createElement("div");
     contentRow.className = "row p-3";
-    for (let [text, callback] of textsAndCallbacks) {
+    for (let [index, [text, callback]] of textsAndCallbacks.entries()) {
         let col = document.createElement("div");
         col.className = "col-md-3 col-lg-2 col-sm-4 col-6 p-1";
         let button = document.createElement("button");
@@ -50,6 +50,11 @@ export function generateMenuButtonsList({
         button.type = "button";
         col.appendChild(button);
         contentRow.appendChild(col);
+
+        if (index == 0) {
+            // The first group/subgroup will be automatically selected
+            button.autofocus = true;
+        }
     }
     container.appendChild(contentRow);
     return container;
@@ -66,7 +71,9 @@ export function generateNodeDetailedView({
     onNameChange,
     onDesriptionChange,
     currentNode,
-    activateInputs
+    activateInputs,
+    activateAddButton,
+    activateDeleteButton
 }) // : {
 // backCallback,
 // absolutePath,
@@ -109,7 +116,8 @@ export function generateNodeDetailedView({
     let currentNodeBreadcrumbLi = document.createElement("li");
     currentNodeBreadcrumbLi.className = "breadcrumb-item active";
     currentNodeBreadcrumbLi.attributes["aria-current"] = "page";
-    currentNodeBreadcrumbLi.innerText = activateInputs
+
+    currentNodeBreadcrumbLi.innerText = absolutePath
         ? currentNode
             ? currentNode.name
             : ""
@@ -126,13 +134,17 @@ export function generateNodeDetailedView({
     let childrenDiv = document.createElement("div");
     childrenDiv.className = "col-6 h-100 overflow-scrollable-auto pt-1 pb-1";
 
-    for (let child of childrenNodes) {
+    for (let [index, child] of childrenNodes.entries()) {
         let childButton = document.createElement("button");
         childButton.className = "w-100 btn btn-outline-secondary mb-3";
         childButton.innerText = child.name;
         childButton.onclick = childClickCallback;
         childButton.dataset.id = child.id;
         childrenDiv.appendChild(childButton);
+
+        if (!activateInputs && index == 0) {
+            childButton.autofocus = true; // The first child node button will be focued if the inputs are disabled
+        }
     }
 
     let addButton = document.createElement("button");
@@ -141,11 +153,24 @@ export function generateNodeDetailedView({
     addButton.onclick = addClickCallback;
     childrenDiv.appendChild(addButton);
 
+    if (activateAddButton) {
+        if (!childrenNodes.length && !activateInputs) {
+            // When the inputs are disabled and there is no children the add button will be activated
+            addButton.autofocus = true;
+        }
+    } else {
+        addButton.disabled = true;
+    }
+
     let deleteButton = document.createElement("button");
     deleteButton.className = "w-100 btn btn-outline-danger mb-3";
     deleteButton.innerText = "Delete";
     deleteButton.onclick = deleteClickCallback;
     childrenDiv.appendChild(deleteButton);
+
+    if (!activateDeleteButton) {
+        deleteButton.disabled = true;
+    }
 
     contentDiv.appendChild(childrenDiv);
 
@@ -159,17 +184,20 @@ export function generateNodeDetailedView({
     let descriptionTextarea = document.createElement("textarea");
     descriptionTextarea.className = "form-control flex-grow-1";
     if (!activateInputs) {
-        nameInput.classList.add("inactive");
-        descriptionTextarea.classList.add("inactive");
-    } else if (!currentNode) {
-        descriptionTextarea.classList.add("inactive");
+        nameInput.disabled = true;
+        descriptionTextarea.disabled = true;
+    } else {
+        nameInput.autofocus = true;
+        if (!currentNode) {
+            descriptionTextarea.disabled = true;
+        }
     }
 
     nameInput.onchange = event => {
         if (nameInput.value) {
             descriptionTextarea.classList.remove("inactive");
         } else {
-            descriptionTextarea.classList.add("inactive");
+            descriptionTextarea.disabled = true;
             if (currentNode && currentNode.name) {
                 nameInput.value = currentNode.name;
                 return;

@@ -49,7 +49,7 @@ How will we handle node types in the front-end?
 
 Maybe allow adding multiple chained nodes at once - node 1 ~ node 2 -- ... - the description will be blank - the path can be relative to regular nodes
     - anyway we have questions here, because how will we select node types? Maybe with two ~~ indication just relation
-What about just collection nodes without description - can be included in inherited nodes
- 
+What about adding just `collection nodes` without description - can be included in inherited nodes
 
-
+Maybe hover the first group/subgroup when opened.
+Maybe use detailed view delete button in the root to delete the group?
