@@ -37,4 +37,5 @@ export abstract class HistoryNode {
             }
         });
     }
+    // Reactivate when going back instead of calling initialize - using this approach we'll be able to add popups as history nodes
 }

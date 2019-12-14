@@ -1,13 +1,14 @@
-import { HistoryNode, HistoryNodeState } from "./base/history_node";
-import { generateNodeDetailedView } from "../tools/html_creators";
-import { GetRootNodes, GetChildNodes } from "../tools/commands";
+import { HistoryNode, HistoryNodeState } from "../base/history_node";
+import { generateNodeDetailedView, updatePath } from "view";
+import { GetRootNodes, GetChildNodes } from "../../tools/commands";
 
 export class NodeDetailedView extends HistoryNode {
     node: any | null;
     parent_id: Number | null;
     subgroup_id: Number | null;
-    path: Array<String>;
+    path: Array<PathNode>;
     nodes: Array<any>;
+    currentPathNode: PathNode;
     constructor({
         node,
         parent_id,
@@ -17,12 +18,17 @@ export class NodeDetailedView extends HistoryNode {
         node?: any,
         parent_id?: Number,
         subgroup_id: Number,
-        path: Array<String>
+        path: Array<PathNode>
     }) {
         super();
         this.node = node;
         this.parent_id = node ? node.associated_node_id : parent_id;
         this.subgroup_id = subgroup_id;
+        this.currentPathNode = new PathNode({
+            isRoot: !path.length,
+            node: this.node
+        });
+        path.push(this.currentPathNode);
         this.path = path;
     }
     initiate() {
@@ -54,7 +60,7 @@ export class NodeDetailedView extends HistoryNode {
         container.appendChild(fragment);
     }
     isRoot(): boolean {
-        return !this.node && !this.path.length;
+        return !this.node && this.path.length == 1;
     }
     canHaveChildren(): boolean {
         return this.isRoot() || this.node;
@@ -75,7 +81,7 @@ export class NodeDetailedView extends HistoryNode {
             throw new Error("This node can't have a child het!");
         }
         let childNodeView = new NodeDetailedView({
-            path: this.path.concat(""),
+            path: [...this.path],
             subgroup_id: this.subgroup_id
         });
         this.openNext(childNodeView);
@@ -84,10 +90,9 @@ export class NodeDetailedView extends HistoryNode {
 
     }
     updateName() {
-
+        updatePath(document.getElementById("container"), this.path, () => {});
     }
     updateDescription() {
-
     }
     findNodeViewFromHistory(node_id) {
         if (this.node && this.node.id == node_id) {
@@ -115,3 +120,27 @@ export class NodeDetailedView extends HistoryNode {
     }
     stop() { }
 }
+
+
+export class PathNode {
+    isRoot: boolean;
+    node: any;
+    constructor({
+        isRoot = false,
+        node, // You have to update this if the node will be created
+    }: {
+        isRoot?: boolean,
+        node?: any
+    }) {
+        this.isRoot = isRoot;
+        this.node = node;
+    }
+    getLabel() {
+        if (this.isRoot) return "root";
+        if (this.node) return this.node.name;
+        return '';
+    }
+}
+
+
+// Maybe create node class

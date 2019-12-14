@@ -1,7 +1,7 @@
 import { HistoryNode, HistoryNodeState } from "./base/history_node";
 import { GetSubGroups } from "../tools/commands";
 import { generateMenuButtonsList } from "../tools/html_creators";
-import { NodeDetailedView } from "./node_detailed_view";
+import { NodeDetailedView } from "./node_detailed_view/node_detailed_view";
 
 export class SubGroupsView extends HistoryNode {
     group_id: Number;

@@ -165,7 +165,31 @@ fn main() {
                                 })
                         });
                 }
-                // Cmd::UpdateNode => {}
+//                Cmd::UpdateNode {
+//                    node_id,
+//                    name,
+//                    description,
+//                    subgroup_id
+//                } => {
+//                    req_id = request_id;
+//                    state
+//                        .groups
+//                        .get_group_from_subgroup(subgroup_id)
+//                        .and_then(|group_id| {
+//                            state
+//                                .groups
+//                                .groups_map
+//                                .get(&group_id)?
+//                                .subgroups
+//                                .subgroups_map
+//                                .get_mut(&subgroup_id)
+//                                .and_then(|subgroup| {
+//                                    subgroup.nodes.nodes_map.get_mut(node_id).and_then(|graph_node| {
+//                                        graph_node.node
+//                                    })
+//                                })
+//                        })
+//                }
                 // Cmd::CreateNode => {}
                 // Cmd::DeleteNode => {}
                 // Cmd::RecursiveDeleteNode => {}
@@ -249,11 +273,12 @@ pub enum Cmd {
         subgroup_id: i32,
         parent_id: i32,
     },
-    // UpdateNode {
-    //     node_id: i32,
-    //     name: String,
-    //     description: String,
-    // },
+    UpdateNode {
+        node_id: i32,
+        name: String,
+        description: String,
+        subgroup_id: i32,
+    },
     // CreateNode {
     //     parent_id: i32,
     //     name: String,

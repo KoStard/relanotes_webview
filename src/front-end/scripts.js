@@ -338,34 +338,35 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
         breadcrumbNav.className = "w-100";
         var breadcrumbOl = document.createElement("ol");
         breadcrumbOl.className = "w-100 breadcrumb m-0";
+        var currentNodeBreadcrumbLi;
         try {
-            for (var absolutePath_1 = __values(absolutePath), absolutePath_1_1 = absolutePath_1.next(); !absolutePath_1_1.done; absolutePath_1_1 = absolutePath_1.next()) {
-                var pathNode = absolutePath_1_1.value;
+            for (var _d = __values(absolutePath.entries()), _e = _d.next(); !_e.done; _e = _d.next()) {
+                var _f = __read(_e.value, 2), index = _f[0], pathNode = _f[1];
                 var breadcrumbLi = document.createElement("li");
-                breadcrumbLi.className = "breadcrumb-item";
-                var breadcrumbA = document.createElement("a");
-                breadcrumbA.href = "#";
-                breadcrumbA.innerText = pathNode;
-                breadcrumbA.onclick = pathClickCallback;
-                breadcrumbLi.appendChild(breadcrumbA);
+                if (index == absolutePath.length - 1) {
+                    currentNodeBreadcrumbLi = breadcrumbLi;
+                    breadcrumbLi.className = "breadcrumb-item active";
+                    breadcrumbLi.attributes["aria-current"] = "page";
+                    breadcrumbLi.innerText = pathNode.getLabel();
+                }
+                else {
+                    breadcrumbLi.className = "breadcrumb-item";
+                    var breadcrumbA = document.createElement("a");
+                    breadcrumbA.href = "#";
+                    breadcrumbA.innerText = pathNode.getLabel();
+                    breadcrumbA.onclick = pathClickCallback;
+                    breadcrumbLi.appendChild(breadcrumbA);
+                }
                 breadcrumbOl.appendChild(breadcrumbLi);
             }
         }
         catch (e_2_1) { e_2 = { error: e_2_1 }; }
         finally {
             try {
-                if (absolutePath_1_1 && !absolutePath_1_1.done && (_b = absolutePath_1["return"])) _b.call(absolutePath_1);
+                if (_e && !_e.done && (_b = _d["return"])) _b.call(_d);
             }
             finally { if (e_2) throw e_2.error; }
         }
-        var currentNodeBreadcrumbLi = document.createElement("li");
-        currentNodeBreadcrumbLi.className = "breadcrumb-item active";
-        currentNodeBreadcrumbLi.attributes["aria-current"] = "page";
-        currentNodeBreadcrumbLi.innerText = absolutePath
-            ? currentNode
-                ? currentNode.name
-                : ""
-            : "root";
         breadcrumbOl.appendChild(currentNodeBreadcrumbLi);
         breadcrumbNav.appendChild(breadcrumbOl);
         headerFlexRow.appendChild(breadcrumbNav);
@@ -376,8 +377,8 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
         var childrenDiv = document.createElement("div");
         childrenDiv.className = "col-6 h-100 overflow-scrollable-auto pt-1 pb-1";
         try {
-            for (var _d = __values(childrenNodes.entries()), _e = _d.next(); !_e.done; _e = _d.next()) {
-                var _f = __read(_e.value, 2), index = _f[0], child = _f[1];
+            for (var _g = __values(childrenNodes.entries()), _h = _g.next(); !_h.done; _h = _g.next()) {
+                var _j = __read(_h.value, 2), index = _j[0], child = _j[1];
                 var childButton = document.createElement("button");
                 childButton.className = "w-100 btn btn-outline-secondary mb-3";
                 childButton.innerText = child.name;
@@ -392,7 +393,7 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
         catch (e_3_1) { e_3 = { error: e_3_1 }; }
         finally {
             try {
-                if (_e && !_e.done && (_c = _d["return"])) _c.call(_d);
+                if (_h && !_h.done && (_c = _g["return"])) _c.call(_g);
             }
             finally { if (e_3) throw e_3.error; }
         }
@@ -469,6 +470,11 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
             _this.node = node;
             _this.parent_id = node ? node.associated_node_id : parent_id;
             _this.subgroup_id = subgroup_id;
+            _this.currentPathNode = new PathNode({
+                isRoot: !path.length,
+                node: _this.node
+            });
+            path.push(_this.currentPathNode);
             _this.path = path;
             return _this;
         }
@@ -512,7 +518,7 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
             });
         };
         NodeDetailedView.prototype.isRoot = function () {
-            return !this.node && !this.path.length;
+            return !this.node && this.path.length == 1;
         };
         NodeDetailedView.prototype.canHaveChildren = function () {
             return this.isRoot() || this.node;
@@ -533,7 +539,7 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
                 throw new Error("This node can't have a child het!");
             }
             var childNodeView = new NodeDetailedView({
-                path: this.path.concat(""),
+                path: __spread(this.path),
                 subgroup_id: this.subgroup_id
             });
             this.openNext(childNodeView);
@@ -582,7 +588,24 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
         return NodeDetailedView;
     }(history_node_1.HistoryNode));
     exports.NodeDetailedView = NodeDetailedView;
+    var PathNode = /** @class */ (function () {
+        function PathNode(_a) {
+            var _b = _a.isRoot, isRoot = _b === void 0 ? false : _b, node = _a.node;
+            this.isRoot = isRoot;
+            this.node = node;
+        }
+        PathNode.prototype.getLabel = function () {
+            if (this.isRoot)
+                return "root";
+            if (this.node)
+                return this.node.name;
+            return '';
+        };
+        return PathNode;
+    }());
+    exports.PathNode = PathNode;
 });
+// Maybe create node class
 define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "tools/html_creators", "flow/node_detailed_view"], function (require, exports, history_node_2, commands_2, html_creators_2, node_detailed_view_1) {
     "use strict";
     exports.__esModule = true;
