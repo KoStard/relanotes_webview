@@ -8,7 +8,7 @@ extern crate web_view;
 
 use diesel::SqliteConnection;
 use relanotes_rs::abstracts::Loadable;
-use relanotes_rs::groups_mod::subgroups_mod::nodes_mod::Node;
+use relanotes_rs::groups_mod::subgroups_mod::nodes_mod::{Node, NodeType};
 use relanotes_rs::groups_mod::Groups;
 use relanotes_rs::models::{GroupElement, SubGroupElement};
 use web_view::*;
@@ -39,55 +39,52 @@ fn main() {
             + &inline_script(include_str!("front-end/scripts.js")),
     );
 
-    let mut webview = web_view::builder()
-        .title("Relanotes")
-        .content(Content::Html(html))
-        .size(800, 600)
-        .debug(true)
-        .user_data(State::new(&connection))
-        .invoke_handler(|webview, arg| {
-            let state = webview.user_data_mut();
-            let mut req_id: i64 = 0;
-            let mut msg = None;
+    let webview =
+        web_view::builder()
+            .title("Relanotes")
+            .content(Content::Html(html))
+            .size(800, 600)
+            .debug(true)
+            .user_data(State::new(&connection))
+            .invoke_handler(|webview, arg| {
+                let state = webview.user_data_mut();
+                let mut req_id: i64 = 0;
+                let mut msg = None;
 
-            let cmd = serde_json::from_str::<Cmd>(arg).unwrap();
-            match cmd {
-                Cmd::Init { request_id } => {
-                    req_id = request_id;
-                    state.groups.load().expect("Got error while loading groups");
-                }
-                Cmd::GetGroups { request_id } => {
-                    req_id = request_id;
-                    let mut elements = state
-                        .groups
-                        .groups_map
-                        .values()
-                        .by_ref()
-                        .map(|e| &e.group)
-                        .collect::<Vec<&GroupElement>>();
-                    elements.sort_by(|a, b| a.id.partial_cmp(&b.id).unwrap());
-                    msg = serde_json::to_string(&elements).ok();
-                }
-                Cmd::CreateGroup {
-                    request_id,
-                    group_name,
-                } => {
-                    req_id = request_id;
-                    let group_abstraction = state.groups.create(group_name).unwrap();
-                    unimplemented!();
-                }
-                // Cmd::DeleteGroup => {}
-                Cmd::GetSubGroups {
-                    request_id,
-                    group_id,
-                } => {
-                    req_id = request_id;
-                    msg =
-                        state
+                let cmd = serde_json::from_str::<Cmd>(arg).unwrap();
+                match cmd {
+                    Cmd::Init { request_id } => {
+                        req_id = request_id;
+                        state.groups.load().expect("Got error while loading groups");
+                    }
+                    Cmd::GetGroups { request_id } => {
+                        req_id = request_id;
+                        let mut elements = state
                             .groups
                             .groups_map
-                            .get_mut(&group_id)
-                            .and_then(|group_abstraction| {
+                            .values()
+                            .by_ref()
+                            .map(|e| &e.group)
+                            .collect::<Vec<&GroupElement>>();
+                        elements.sort_by(|a, b| a.id.partial_cmp(&b.id).unwrap());
+                        msg = serde_json::to_string(&elements).ok();
+                    }
+                    Cmd::CreateGroup {
+                        request_id,
+                        group_name,
+                    } => {
+                        req_id = request_id;
+                        let group_abstraction = state.groups.create(group_name).unwrap();
+                        unimplemented!();
+                    }
+                    // Cmd::DeleteGroup => {}
+                    Cmd::GetSubGroups {
+                        request_id,
+                        group_id,
+                    } => {
+                        req_id = request_id;
+                        msg = state.groups.groups_map.get_mut(&group_id).and_then(
+                            |group_abstraction| {
                                 if !group_abstraction.subgroups.loaded {
                                     group_abstraction.subgroups.load().ok()?;
                                 }
@@ -100,109 +97,121 @@ fn main() {
                                     .collect::<Vec<&SubGroupElement>>();
                                 elements.sort_by(|a, b| a.id.partial_cmp(&b.id).unwrap());
                                 serde_json::to_string(&elements).ok()
+                            },
+                        );
+                    }
+                    // Cmd::CreateSubGroup => {}
+                    // Cmd::DeleteSubGroup => {}
+                    // Cmd::LoadSubGroup => {}
+                    Cmd::GetRootNodes {
+                        request_id,
+                        subgroup_id,
+                    } => {
+                        req_id = request_id;
+                        msg = state
+                            .groups
+                            .get_mut_subgroup_abstraction(subgroup_id)
+                            .and_then(|subgroup| {
+                                if !subgroup.nodes.loaded {
+                                    subgroup.nodes.load().ok()?;
+                                }
+                                let elements = subgroup
+                                    .nodes
+                                    .get_roots()
+                                    .into_iter()
+                                    .map(|id| &subgroup.nodes.nodes_map.get(&id).unwrap().node)
+                                    .collect::<Vec<&Node>>();
+                                // sort nodes
+                                serde_json::to_string(&elements).ok()
                             });
-                }
-                // Cmd::CreateSubGroup => {}
-                // Cmd::DeleteSubGroup => {}
-                // Cmd::LoadSubGroup => {}
-                Cmd::GetRootNodes {
-                    request_id,
-                    subgroup_id,
-                } => {
-                    req_id = request_id;
-                    msg = state
-                        .groups
-                        .get_group_from_subgroup(subgroup_id)
-                        .and_then(|group_id| {
+                    }
+                    Cmd::GetChildNodes {
+                        request_id,
+                        subgroup_id,
+                        parent_id,
+                    } => {
+                        req_id = request_id;
+                        msg = state.groups.get_subgroup_abstraction(subgroup_id).and_then(
+                            |subgroup| {
+                                let elements = subgroup
+                                    .nodes
+                                    .get_node_loaded_children(&parent_id)?
+                                    .into_iter()
+                                    .map(|id| &subgroup.nodes.nodes_map.get(&id).unwrap().node)
+                                    .collect::<Vec<&Node>>();
+                                // sort nodes
+                                serde_json::to_string(&elements).ok()
+                            },
+                        );
+                    }
+                    Cmd::UpdateNode {
+                        node_id,
+                        name,
+                        description,
+                        subgroup_id,
+                        request_id,
+                    } => {
+                        req_id = request_id;
+                        msg =
                             state
                                 .groups
-                                .groups_map
-                                .get_mut(&group_id)?
-                                .subgroups
-                                .subgroups_map
-                                .get_mut(&subgroup_id)
+                                .get_mut_subgroup_abstraction(subgroup_id)
                                 .and_then(|subgroup| {
-                                    if !subgroup.nodes.loaded {
-                                        subgroup.nodes.load().ok()?;
-                                    }
-                                    let elements = subgroup
-                                        .nodes
-                                        .get_roots()
-                                        .into_iter()
-                                        .map(|id| &subgroup.nodes.nodes_map.get(&id).unwrap().node)
-                                        .collect::<Vec<&Node>>();
-                                    // sort nodes
-                                    serde_json::to_string(&elements).ok()
-                                })
-                        });
+                                    subgroup.nodes.nodes_map.get_mut(&node_id).and_then(
+                                        |graph_node| {
+                                            graph_node
+                                                .node
+                                                .update_name_and_description(name, description)
+                                                .ok()
+                                                .and_then(|_| {
+                                                    serde_json::to_string(&graph_node.node).ok()
+                                                })
+                                        },
+                                    )
+                                });
+                    }
+                    // Cmd::CreateNode => {}
+                    // Cmd::DeleteNode => {}
+                    // Cmd::RecursiveDeleteNode => {}
+                    //                _ => {
+                    //                    unimplemented!("Is not implemented");
+                    //                }
+                    Cmd::DeleteGroup {
+                        request_id: _,
+                        group_id: _,
+                    } => unimplemented!(),
+                    Cmd::UpdateGroup {
+                        request_id: _,
+                        group_id: _,
+                        name: _,
+                    } => unimplemented!(),
+                    Cmd::CreateNode {
+                        name,
+                        description,
+                        node_type,
+                        linked_to_id,
+                        subgroup_id,
+                        request_id,
+                    } => {
+                        req_id = request_id;
+                        msg = state.groups.get_mut_subgroup_abstraction(subgroup_id).and_then(|subgroup| {
+                            subgroup.nodes.validate_node_creation(
+                                name,
+                                description,
+                                linked_to_id,
+                                subgroup_id,
+                                node_type
+                            );
+                        })
+                        unimplemented!()
+                    }
                 }
-                Cmd::GetChildNodes {
-                    request_id,
-                    subgroup_id,
-                    parent_id,
-                } => {
-                    req_id = request_id;
-                    msg = state
-                        .groups
-                        .get_group_from_subgroup(subgroup_id)
-                        .and_then(|group_id| {
-                            state
-                                .groups
-                                .groups_map
-                                .get(&group_id)?
-                                .subgroups
-                                .subgroups_map
-                                .get(&subgroup_id)
-                                .and_then(|subgroup| {
-                                    let elements = subgroup
-                                        .nodes
-                                        .get_node_loaded_children(&parent_id)?
-                                        .into_iter()
-                                        .map(|id| &subgroup.nodes.nodes_map.get(&id).unwrap().node)
-                                        .collect::<Vec<&Node>>();
-                                    // sort nodes
-                                    serde_json::to_string(&elements).ok()
-                                })
-                        });
-                }
-//                Cmd::UpdateNode {
-//                    node_id,
-//                    name,
-//                    description,
-//                    subgroup_id
-//                } => {
-//                    req_id = request_id;
-//                    state
-//                        .groups
-//                        .get_group_from_subgroup(subgroup_id)
-//                        .and_then(|group_id| {
-//                            state
-//                                .groups
-//                                .groups_map
-//                                .get(&group_id)?
-//                                .subgroups
-//                                .subgroups_map
-//                                .get_mut(&subgroup_id)
-//                                .and_then(|subgroup| {
-//                                    subgroup.nodes.nodes_map.get_mut(node_id).and_then(|graph_node| {
-//                                        graph_node.node
-//                                    })
-//                                })
-//                        })
-//                }
-                // Cmd::CreateNode => {}
-                // Cmd::DeleteNode => {}
-                // Cmd::RecursiveDeleteNode => {}
-                _ => {
-                    unimplemented!("Is not implemented");
-                }
-            }
 
-            // webview.set_title(&format!("Rust Todo App ({} Tasks)", tasks_len))?;
-            send_response(webview, req_id, msg)
-        })
-        .build()
-        .unwrap();
+                // webview.set_title(&format!("Rust Todo App ({} Tasks)", tasks_len))?;
+                send_response(webview, req_id, msg)
+            })
+            .build()
+            .unwrap();
 
     // webview.set_color((156, 39, 176));
 
@@ -276,14 +285,18 @@ pub enum Cmd {
     UpdateNode {
         node_id: i32,
         name: String,
-        description: String,
+        description: Option<String>,
         subgroup_id: i32,
+        request_id: i64,
     },
-    // CreateNode {
-    //     parent_id: i32,
-    //     name: String,
-    //     description: String,
-    // },
+    CreateNode {
+        name: String,
+        description: String,
+        node_type: NodeType,
+        linked_to_id: Option<i32>,
+        subgroup_id: i32,
+        request_id: i64,
+    },
     // DeleteNode {
     //     node_id: i32,
     // },
