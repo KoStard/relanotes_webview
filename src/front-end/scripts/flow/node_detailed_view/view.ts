@@ -138,6 +138,7 @@ export function generateNodeDetailedView({
 
 export function updatePath(container: HTMLElement, absolutePath: Array<PathNode>, pathClickCallback) {
     let breadcrumbOl = container.querySelector('#breadcrumb_ordered_list');
+    breadcrumbOl.innerHTML = "";
 
     for (let [index, pathNode] of absolutePath.entries()) {
         let breadcrumbLi = document.createElement("li");

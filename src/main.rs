@@ -25,6 +25,16 @@ impl<'a> State<'a> {
     }
 }
 
+#[derive(Serialize)]
+enum Message<'a, 'b> {
+    NodeMutationValidationError(String),
+    DBError(String),
+    Groups(Vec<&'b GroupElement>),
+    SubGroups(Vec<&'b SubGroupElement>),
+    Nodes(Vec<&'b Node<'a>>),
+    Node(&'b Node<'a>),
+}
+
 fn main() {
     let connection = relanotes_rs::establish_connection();
     relanotes_rs::database_setup::setup_database(&connection).unwrap();
@@ -67,7 +77,7 @@ fn main() {
                             .map(|e| &e.group)
                             .collect::<Vec<&GroupElement>>();
                         elements.sort_by(|a, b| a.id.partial_cmp(&b.id).unwrap());
-                        msg = serde_json::to_string(&elements).ok();
+                        msg = serde_json::to_string(&Message::Groups(elements)).ok();
                     }
                     Cmd::CreateGroup {
                         request_id,
@@ -96,7 +106,7 @@ fn main() {
                                     .map(|e| &e.subgroup)
                                     .collect::<Vec<&SubGroupElement>>();
                                 elements.sort_by(|a, b| a.id.partial_cmp(&b.id).unwrap());
-                                serde_json::to_string(&elements).ok()
+                                serde_json::to_string(&Message::SubGroups(elements)).ok()
                             },
                         );
                     }
@@ -122,7 +132,7 @@ fn main() {
                                     .map(|id| &subgroup.nodes.nodes_map.get(&id).unwrap().node)
                                     .collect::<Vec<&Node>>();
                                 // sort nodes
-                                serde_json::to_string(&elements).ok()
+                                serde_json::to_string(&Message::Nodes(elements)).ok()
                             });
                     }
                     Cmd::GetChildNodes {
@@ -140,7 +150,7 @@ fn main() {
                                     .map(|id| &subgroup.nodes.nodes_map.get(&id).unwrap().node)
                                     .collect::<Vec<&Node>>();
                                 // sort nodes
-                                serde_json::to_string(&elements).ok()
+                                serde_json::to_string(&Message::Nodes(elements)).ok()
                             },
                         );
                     }
@@ -152,23 +162,41 @@ fn main() {
                         request_id,
                     } => {
                         req_id = request_id;
-                        msg =
-                            state
-                                .groups
-                                .get_mut_subgroup_abstraction(subgroup_id)
-                                .and_then(|subgroup| {
-                                    subgroup.nodes.nodes_map.get_mut(&node_id).and_then(
+                        let group_id = state.groups.get_group_from_subgroup(subgroup_id).unwrap();
+                        msg = state
+                            .groups
+                            .get_mut_subgroup_abstraction(subgroup_id)
+                            .and_then(|subgroup| {
+                                let graph_node = subgroup.nodes.nodes_map.get(&node_id)?;
+                                match subgroup.nodes.validate_node_mutation_or_creation(
+                                    None,
+                                    name.as_str(),
+                                    description.as_ref().map(|s| s.as_str()),
+                                    graph_node.node.get_linked_to_id(),
+                                    subgroup_id,
+                                    group_id,
+                                    graph_node.node.get_node_type(),
+                                ) {
+                                    Ok(()) => subgroup.nodes.nodes_map.get_mut(&node_id).and_then(
                                         |graph_node| {
                                             graph_node
                                                 .node
                                                 .update_name_and_description(name, description)
                                                 .ok()
                                                 .and_then(|_| {
-                                                    serde_json::to_string(&graph_node.node).ok()
+                                                    serde_json::to_string(&Message::Node(
+                                                        &graph_node.node,
+                                                    ))
+                                                    .ok()
                                                 })
                                         },
+                                    ),
+                                    Err(e) => serde_json::to_string(
+                                        &Message::NodeMutationValidationError(e.to_string()),
                                     )
-                                });
+                                    .ok(),
+                                }
+                            });
                     }
                     // Cmd::CreateNode => {}
                     // Cmd::DeleteNode => {}
@@ -194,16 +222,43 @@ fn main() {
                         request_id,
                     } => {
                         req_id = request_id;
-                        msg = state.groups.get_mut_subgroup_abstraction(subgroup_id).and_then(|subgroup| {
-                            subgroup.nodes.validate_node_creation(
-                                name,
-                                description,
-                                linked_to_id,
-                                subgroup_id,
-                                node_type
-                            );
-                        })
-                        unimplemented!()
+                        let group_id = state.groups.get_group_from_subgroup(subgroup_id).unwrap();
+                        msg = state
+                            .groups
+                            .get_mut_subgroup_abstraction(subgroup_id)
+                            .and_then(|subgroup| {
+                                match subgroup.nodes.validate_node_mutation_or_creation(
+                                    None,
+                                    name.as_str(),
+                                    description.as_ref().map(|s| s.as_str()),
+                                    linked_to_id,
+                                    subgroup_id,
+                                    group_id,
+                                    node_type,
+                                ) {
+                                    Ok(()) => {
+                                        match subgroup.nodes.create_node(
+                                            name.as_str(),
+                                            description.as_ref().map(|s| s.as_str()),
+                                            linked_to_id,
+                                            subgroup_id,
+                                            subgroup.nodes.get_node_type_id_from_type(&node_type),
+                                        ) {
+                                            Ok(node) => {
+                                                serde_json::to_string(&Message::Node(node)).ok()
+                                            }
+                                            Err(e) => serde_json::to_string(&Message::DBError(
+                                                e.to_string(),
+                                            ))
+                                            .ok(),
+                                        }
+                                    }
+                                    Err(e) => serde_json::to_string(
+                                        &Message::NodeMutationValidationError(e.to_string()),
+                                    )
+                                    .ok(),
+                                }
+                            });
                     }
                 }
 
@@ -225,7 +280,7 @@ fn send_response(webview: &mut WebView<State>, req_id: i64, msg: Option<String>)
                 "window.ipc.rr.put_response({}, {})",
                 req_id,
                 if let Some(e) = msg {
-                    e
+                    serde_json::to_string(&e).unwrap()
                 } else {
                     String::from("")
                 }
@@ -291,7 +346,7 @@ pub enum Cmd {
     },
     CreateNode {
         name: String,
-        description: String,
+        description: Option<String>,
         node_type: NodeType,
         linked_to_id: Option<i32>,
         subgroup_id: i32,

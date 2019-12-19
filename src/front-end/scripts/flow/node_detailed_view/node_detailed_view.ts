@@ -69,7 +69,7 @@ export class NodeDetailedView extends HistoryNode {
         // Increment the path here
         let childNodeView = new NodeDetailedView({
             node: node,
-            path: this.path.concat(node.name),
+            path: [...this.path],
             subgroup_id: this.subgroup_id
         });
         this.openNext(childNodeView);
@@ -107,13 +107,13 @@ export class NodeDetailedView extends HistoryNode {
         if (this.node) {
             // Just showing the parents
             console.log("Will load children", this.subgroup_id);
-            return await (window as any).ipc.rr.send_command(new GetChildNodes(this.subgroup_id, this.node.id));
+            return (await (window as any).ipc.rr.send_command(new GetChildNodes(this.subgroup_id, this.node.id))).Nodes;
         } else if (this.parent_id) {
             // Will create a node
             // Maybe we don't need this - because we can't create a node inside not registered node
         } else if (this.subgroup_id) {
             // Viewing the root of the subgroup
-            return await (window as any).ipc.rr.send_command(new GetRootNodes(this.subgroup_id));
+            return (await (window as any).ipc.rr.send_command(new GetRootNodes(this.subgroup_id))).Nodes;
         } else {
             throw new Error("Trying to load uninitialized node detailed view.");
         }

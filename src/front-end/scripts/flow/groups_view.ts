@@ -28,7 +28,8 @@ export class GroupsView extends HistoryNode {
         container.appendChild(fragment);
     }
     async loadGroups() {
-        return await (window as any).ipc.rr.send_command(new GetGroups());
+        console.log((await (window as any).ipc.rr.send_command(new GetGroups())))
+        return (await (window as any).ipc.rr.send_command(new GetGroups())).Groups;
     }
     openGroup(group_id: Number) {
         this.openNext(new SubGroupsView(group_id));

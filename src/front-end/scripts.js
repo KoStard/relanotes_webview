@@ -205,8 +205,8 @@ define("tools/requests_registry", ["require", "exports", "tools/tools"], functio
             });
         };
         RequestsRegistry.prototype.put_response = function (id, msg) {
-            // console.log("Got response", id, msg);
-            this.requests[id.toString()].f(msg);
+            console.warn("Got response", id, msg);
+            this.requests[id.toString()].f(JSON.parse(msg));
             delete this.requests[id.toString()];
         };
         return RequestsRegistry;
@@ -319,8 +319,12 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
         return container;
     }
     exports.generateMenuButtonsList = generateMenuButtonsList;
+});
+define("flow/node_detailed_view/view", ["require", "exports"], function (require, exports) {
+    "use strict";
+    exports.__esModule = true;
     function generateNodeDetailedView(_a) {
-        var e_2, _b, e_3, _c;
+        var e_2, _b;
         var backCallback = _a.backCallback, absolutePath = _a.absolutePath, pathClickCallback = _a.pathClickCallback, childrenNodes = _a.childrenNodes, childClickCallback = _a.childClickCallback, addClickCallback = _a.addClickCallback, deleteClickCallback = _a.deleteClickCallback, onNameChange = _a.onNameChange, onDesriptionChange = _a.onDesriptionChange, currentNode = _a.currentNode, activateInputs = _a.activateInputs, activateAddButton = _a.activateAddButton, activateDeleteButton = _a.activateDeleteButton;
         var container = document.createElement("div");
         container.className =
@@ -338,37 +342,9 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
         breadcrumbNav.className = "w-100";
         var breadcrumbOl = document.createElement("ol");
         breadcrumbOl.className = "w-100 breadcrumb m-0";
-        var currentNodeBreadcrumbLi;
-        try {
-            for (var _d = __values(absolutePath.entries()), _e = _d.next(); !_e.done; _e = _d.next()) {
-                var _f = __read(_e.value, 2), index = _f[0], pathNode = _f[1];
-                var breadcrumbLi = document.createElement("li");
-                if (index == absolutePath.length - 1) {
-                    currentNodeBreadcrumbLi = breadcrumbLi;
-                    breadcrumbLi.className = "breadcrumb-item active";
-                    breadcrumbLi.attributes["aria-current"] = "page";
-                    breadcrumbLi.innerText = pathNode.getLabel();
-                }
-                else {
-                    breadcrumbLi.className = "breadcrumb-item";
-                    var breadcrumbA = document.createElement("a");
-                    breadcrumbA.href = "#";
-                    breadcrumbA.innerText = pathNode.getLabel();
-                    breadcrumbA.onclick = pathClickCallback;
-                    breadcrumbLi.appendChild(breadcrumbA);
-                }
-                breadcrumbOl.appendChild(breadcrumbLi);
-            }
-        }
-        catch (e_2_1) { e_2 = { error: e_2_1 }; }
-        finally {
-            try {
-                if (_e && !_e.done && (_b = _d["return"])) _b.call(_d);
-            }
-            finally { if (e_2) throw e_2.error; }
-        }
-        breadcrumbOl.appendChild(currentNodeBreadcrumbLi);
+        breadcrumbOl.id = "breadcrumb_ordered_list";
         breadcrumbNav.appendChild(breadcrumbOl);
+        updatePath(breadcrumbNav, absolutePath, pathClickCallback);
         headerFlexRow.appendChild(breadcrumbNav);
         headerDiv.appendChild(headerFlexRow);
         container.appendChild(headerDiv);
@@ -377,8 +353,8 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
         var childrenDiv = document.createElement("div");
         childrenDiv.className = "col-6 h-100 overflow-scrollable-auto pt-1 pb-1";
         try {
-            for (var _g = __values(childrenNodes.entries()), _h = _g.next(); !_h.done; _h = _g.next()) {
-                var _j = __read(_h.value, 2), index = _j[0], child = _j[1];
+            for (var _c = __values(childrenNodes.entries()), _d = _c.next(); !_d.done; _d = _c.next()) {
+                var _e = __read(_d.value, 2), index = _e[0], child = _e[1];
                 var childButton = document.createElement("button");
                 childButton.className = "w-100 btn btn-outline-secondary mb-3";
                 childButton.innerText = child.name;
@@ -390,12 +366,12 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
                 }
             }
         }
-        catch (e_3_1) { e_3 = { error: e_3_1 }; }
+        catch (e_2_1) { e_2 = { error: e_2_1 }; }
         finally {
             try {
-                if (_h && !_h.done && (_c = _g["return"])) _c.call(_g);
+                if (_d && !_d.done && (_b = _c["return"])) _b.call(_c);
             }
-            finally { if (e_3) throw e_3.error; }
+            finally { if (e_2) throw e_2.error; }
         }
         var addButton = document.createElement("button");
         addButton.className = "w-100 btn btn-outline-success mb-3";
@@ -449,7 +425,6 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
                 }
             }
             onNameChange(event);
-            currentNodeBreadcrumbLi.innerText = nameInput.value;
         };
         descriptionTextarea.onchange = onDesriptionChange;
         detailsDiv.appendChild(descriptionTextarea);
@@ -458,8 +433,41 @@ define("tools/html_creators", ["require", "exports"], function (require, exports
         return container;
     }
     exports.generateNodeDetailedView = generateNodeDetailedView;
+    function updatePath(container, absolutePath, pathClickCallback) {
+        var e_3, _a;
+        var breadcrumbOl = container.querySelector('#breadcrumb_ordered_list');
+        breadcrumbOl.innerHTML = "";
+        try {
+            for (var _b = __values(absolutePath.entries()), _c = _b.next(); !_c.done; _c = _b.next()) {
+                var _d = __read(_c.value, 2), index = _d[0], pathNode = _d[1];
+                var breadcrumbLi = document.createElement("li");
+                if (index == absolutePath.length - 1) {
+                    breadcrumbLi.className = "breadcrumb-item active";
+                    breadcrumbLi.attributes["aria-current"] = "page";
+                    breadcrumbLi.innerText = pathNode.getLabel();
+                }
+                else {
+                    breadcrumbLi.className = "breadcrumb-item";
+                    var breadcrumbA = document.createElement("a");
+                    breadcrumbA.href = "#";
+                    breadcrumbA.innerText = pathNode.getLabel();
+                    breadcrumbA.onclick = pathClickCallback;
+                    breadcrumbLi.appendChild(breadcrumbA);
+                }
+                breadcrumbOl.appendChild(breadcrumbLi);
+            }
+        }
+        catch (e_3_1) { e_3 = { error: e_3_1 }; }
+        finally {
+            try {
+                if (_c && !_c.done && (_a = _b["return"])) _a.call(_b);
+            }
+            finally { if (e_3) throw e_3.error; }
+        }
+    }
+    exports.updatePath = updatePath;
 });
-define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node", "tools/html_creators", "tools/commands"], function (require, exports, history_node_1, html_creators_1, commands_1) {
+define("flow/node_detailed_view/node_detailed_view", ["require", "exports", "flow/base/history_node", "flow/node_detailed_view/view", "tools/commands"], function (require, exports, history_node_1, view_1, commands_1) {
     "use strict";
     exports.__esModule = true;
     var NodeDetailedView = /** @class */ (function (_super) {
@@ -495,7 +503,7 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
                         case 1:
                             _a.nodes = _b.sent();
                             fragment = document.createDocumentFragment();
-                            fragment.appendChild(html_creators_1.generateNodeDetailedView({
+                            fragment.appendChild(view_1.generateNodeDetailedView({
                                 backCallback: function () { return _this.goBack(); },
                                 absolutePath: this.path,
                                 pathClickCallback: function () { console.log("Path click", arguments); },
@@ -527,7 +535,7 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
             // Increment the path here
             var childNodeView = new NodeDetailedView({
                 node: node,
-                path: this.path.concat(node.name),
+                path: __spread(this.path),
                 subgroup_id: this.subgroup_id
             });
             this.openNext(childNodeView);
@@ -547,6 +555,7 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
         NodeDetailedView.prototype.deleteNode = function () {
         };
         NodeDetailedView.prototype.updateName = function () {
+            view_1.updatePath(document.getElementById("container"), this.path, function () { });
         };
         NodeDetailedView.prototype.updateDescription = function () {
         };
@@ -568,7 +577,7 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
                             // Just showing the parents
                             console.log("Will load children", this.subgroup_id);
                             return [4 /*yield*/, window.ipc.rr.send_command(new commands_1.GetChildNodes(this.subgroup_id, this.node.id))];
-                        case 1: return [2 /*return*/, _a.sent()];
+                        case 1: return [2 /*return*/, (_a.sent()).Nodes];
                         case 2:
                             if (!this.parent_id) return [3 /*break*/, 3];
                             return [3 /*break*/, 6];
@@ -577,7 +586,7 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
                             return [4 /*yield*/, window.ipc.rr.send_command(new commands_1.GetRootNodes(this.subgroup_id))];
                         case 4: 
                         // Viewing the root of the subgroup
-                        return [2 /*return*/, _a.sent()];
+                        return [2 /*return*/, (_a.sent()).Nodes];
                         case 5: throw new Error("Trying to load uninitialized node detailed view.");
                         case 6: return [2 /*return*/];
                     }
@@ -606,7 +615,7 @@ define("flow/node_detailed_view", ["require", "exports", "flow/base/history_node
     exports.PathNode = PathNode;
 });
 // Maybe create node class
-define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "tools/html_creators", "flow/node_detailed_view"], function (require, exports, history_node_2, commands_2, html_creators_2, node_detailed_view_1) {
+define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "tools/html_creators", "flow/node_detailed_view/node_detailed_view"], function (require, exports, history_node_2, commands_2, html_creators_1, node_detailed_view_1) {
     "use strict";
     exports.__esModule = true;
     var SubGroupsView = /** @class */ (function (_super) {
@@ -629,7 +638,7 @@ define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "
                         case 0:
                             fragment = document.createDocumentFragment();
                             _b = (_a = fragment).appendChild;
-                            _c = html_creators_2.generateMenuButtonsList;
+                            _c = html_creators_1.generateMenuButtonsList;
                             _d = {
                                 header: "Select a subgroup"
                             };
@@ -661,7 +670,7 @@ define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0: return [4 /*yield*/, window.ipc.rr.send_command(new commands_2.GetSubGroups(this.group_id))];
-                        case 1: return [2 /*return*/, _a.sent()];
+                        case 1: return [2 /*return*/, (_a.sent()).SubGroups];
                     }
                 });
             });
@@ -674,7 +683,7 @@ define("flow/subgroups_view", ["require", "exports", "flow/base/history_node", "
     }(history_node_2.HistoryNode));
     exports.SubGroupsView = SubGroupsView;
 });
-define("flow/groups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "flow/subgroups_view", "tools/html_creators"], function (require, exports, history_node_3, commands_3, subgroups_view_1, html_creators_3) {
+define("flow/groups_view", ["require", "exports", "flow/base/history_node", "tools/commands", "flow/subgroups_view", "tools/html_creators"], function (require, exports, history_node_3, commands_3, subgroups_view_1, html_creators_2) {
     "use strict";
     exports.__esModule = true;
     var GroupsView = /** @class */ (function (_super) {
@@ -695,7 +704,7 @@ define("flow/groups_view", ["require", "exports", "flow/base/history_node", "too
                         case 0:
                             fragment = document.createDocumentFragment();
                             _b = (_a = fragment).appendChild;
-                            _c = html_creators_3.generateMenuButtonsList;
+                            _c = html_creators_2.generateMenuButtonsList;
                             _d = {
                                 header: "Select a group"
                             };
@@ -717,10 +726,16 @@ define("flow/groups_view", ["require", "exports", "flow/base/history_node", "too
         };
         GroupsView.prototype.loadGroups = function () {
             return __awaiter(this, void 0, void 0, function () {
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, window.ipc.rr.send_command(new commands_3.GetGroups())];
-                        case 1: return [2 /*return*/, _a.sent()];
+                var _a, _b;
+                return __generator(this, function (_c) {
+                    switch (_c.label) {
+                        case 0:
+                            _b = (_a = console).log;
+                            return [4 /*yield*/, window.ipc.rr.send_command(new commands_3.GetGroups())];
+                        case 1:
+                            _b.apply(_a, [(_c.sent())]);
+                            return [4 /*yield*/, window.ipc.rr.send_command(new commands_3.GetGroups())];
+                        case 2: return [2 /*return*/, (_c.sent()).Groups];
                     }
                 });
             });

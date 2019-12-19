@@ -37,7 +37,7 @@ export class SubGroupsView extends HistoryNode {
         container.appendChild(fragment);
     }
     async loadSubGroups() {
-        return await (window as any).ipc.rr.send_command(new GetSubGroups(this.group_id));
+        return (await (window as any).ipc.rr.send_command(new GetSubGroups(this.group_id))).SubGroups;
     }
     openSubGroup(subgroup_id: Number) {
         this.openNext(new NodeDetailedView({ subgroup_id, path: [] }));
